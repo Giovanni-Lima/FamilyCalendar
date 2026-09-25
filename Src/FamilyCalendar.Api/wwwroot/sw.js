@@ -1,0 +1,39 @@
+/* Service worker minimo di FamilyCalendar.
+ *
+ * Rende l'app installabile (PWA) e apribile offline nel suo guscio, SENZA mai mettere in cache
+ * le risposte /api (dati + auth: passano sempre dalla rete). Strategia guscio: rete prima, cache
+ * come ripiego offline. Alza CACHE_VERSION a ogni modifica al guscio. */
+const CACHE_VERSION = "v1";
+const CACHE_NAME = `fc-shell-${CACHE_VERSION}`;
+
+const SHELL = ["/", "/index.html", "/manifest.webmanifest", "/icon-192.png", "/icon-512.png", "/icon-maskable-512.png"];
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener("fetch", (event) => {
+  const req = event.request;
+  const url = new URL(req.url);
+  if (req.method !== "GET" || url.origin !== self.location.origin || url.pathname.startsWith("/api")) return;
+
+  event.respondWith(
+    fetch(req)
+      .then((res) => {
+        if (res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((c) => c.put(req, copy));
+        }
+        return res;
+      })
+      .catch(() => caches.match(req).then((hit) => hit || caches.match("/")))
+  );
+});

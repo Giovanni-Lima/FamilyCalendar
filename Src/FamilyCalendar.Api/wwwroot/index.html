@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>FamilyCalendar</title>
+
+  <!-- PWA: app installabile (manifest + service worker, vedi sw.js) -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="FamilyCalendar">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <style>
+    :root{
+      --orange:#ff9a1f; --orange-dark:#f08400; --peach:#fde9cc; --page:#fdc98a;
+      --ink:#16181d; --muted:#8a8f98; --line:#e6e8ec; --surface:#fff; --yellow:#f2c500; --danger:#e5484d;
+      --shadow:0 8px 20px rgba(255,154,31,.38);
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%;margin:0}
+    body{background:var(--page);color:var(--ink);
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      display:flex;justify-content:center;align-items:stretch}
+    button,input,textarea,select{font:inherit;color:inherit}
+    button{cursor:pointer}
+    [hidden]{display:none!important}
+
+    /* Sul telefono l'app occupa tutto lo schermo; su desktop è una "card" centrata. */
+    .app{position:relative;width:100%;max-width:430px;height:100%;background:var(--surface);overflow:hidden;
+      display:flex;flex-direction:column}
+    @media (min-width:600px){
+      body{padding:24px 0}
+      .app{border-radius:28px;box-shadow:0 20px 50px rgba(120,60,0,.25)}
+    }
+    /* Cerchio grigio decorativo in alto a destra, come nel mockup */
+    .app::before{content:"";position:absolute;top:-170px;right:-140px;width:360px;height:360px;border-radius:50%;
+      background:#eef0f2;z-index:0;pointer-events:none}
+
+    /* --- intestazione ---------------------------------------------------- */
+    .top{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-start;
+      padding:calc(env(safe-area-inset-top) + 34px) 22px 0}
+    .date-line{font-size:17px;letter-spacing:.01em;text-transform:uppercase}
+    .today{color:var(--orange);font-weight:800;font-size:17px;letter-spacing:.02em;text-transform:uppercase;margin-top:2px}
+    .icon-btn{width:38px;height:38px;border-radius:50%;border:0;background:transparent;display:grid;place-items:center;
+      color:var(--ink);position:relative}
+    .icon-btn svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+    /* --- striscia della settimana --------------------------------------- */
+    .week-wrap{position:relative;z-index:1;margin:26px 0 0;padding:0 16px;display:flex;align-items:center;gap:4px}
+    .week-nav{flex:0 0 auto;width:22px;height:44px;border:0;background:transparent;color:var(--orange);display:grid;place-items:center;padding:0}
+    .week-nav svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+    .week{flex:1;display:grid;grid-template-columns:repeat(7,1fr);gap:6px;touch-action:pan-y}
+    .day{border:0;background:var(--peach);border-radius:10px;padding:8px 0 7px;display:flex;flex-direction:column;
+      align-items:center;gap:3px;min-height:64px;transition:transform .12s}
+    .day .dn{font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--ink)}
+    .day .dd{font-size:19px;font-weight:800;line-height:1}
+    .day .dots{display:flex;gap:3px;height:6px;align-items:center}
+    .day .dots i{width:5px;height:5px;border-radius:50%;display:block}
+    .day.sel{background:var(--orange);color:#fff;box-shadow:var(--shadow);transform:translateY(-2px)}
+    .day.sel .dn{color:#fff}
+    .day.is-today:not(.sel) .dd{color:var(--orange-dark)}
+
+    /* --- elenco attività (timeline) ------------------------------------- */
+    .list{position:relative;z-index:1;flex:1;overflow-y:auto;padding:26px 20px 130px;-webkit-overflow-scrolling:touch}
+    .item{position:relative;display:flex;gap:14px;align-items:flex-start;padding-bottom:16px}
+    .item::before{content:"";position:absolute;left:10px;top:24px;bottom:-4px;width:1px;background:#d7dae0}
+    .item:last-of-type::before{display:none}
+    .chk{flex:0 0 auto;width:21px;height:21px;border-radius:6px;border:1.5px solid #c9ccd3;background:#fff;padding:0;
+      display:grid;place-items:center;margin-top:9px;position:relative;z-index:1}
+    .chk svg{width:13px;height:13px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+    .item.done .chk{background:var(--orange);border-color:var(--orange)}
+    .item.done .chk svg{opacity:1}
+    .card{flex:1;min-width:0;text-align:left;border:1px solid transparent;border-radius:8px;padding:9px 12px 8px;
+      background:#fff;border-color:var(--line);display:block;width:100%}
+    .card .row{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+    .card .name{font-weight:700;font-size:14.5px;overflow-wrap:anywhere}
+    .card .time{font-size:13px;font-weight:500;white-space:nowrap}
+    .card .note{font-size:11.5px;color:#4b5058;margin-top:4px;white-space:pre-wrap;overflow-wrap:anywhere}
+    .card .lbl{display:flex;align-items:center;gap:5px;font-size:10px;margin-top:6px;color:#4b5058}
+    .card .lbl i{width:6px;height:6px;border-radius:50%;display:block}
+    .item.done .name,.item.done .time{text-decoration:line-through}
+    .item.done .card{opacity:.55}
+    .empty{text-align:center;color:var(--yellow);font-weight:800;font-size:13.5px;margin-top:22px;letter-spacing:.01em}
+    .empty.none{color:var(--muted);font-weight:600}
+
+    /* --- pulsante + ------------------------------------------------------ */
+    .fab{position:absolute;z-index:5;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 26px);
+      width:62px;height:62px;border-radius:50%;border:0;background:var(--orange);color:#fff;display:grid;place-items:center;
+      box-shadow:var(--shadow)}
+    .fab svg{width:28px;height:28px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round}
+    .fab:active{transform:translateX(-50%) scale(.95)}
+
+    /* --- foglio "nuova attività" ---------------------------------------- */
+    .sheet{position:absolute;inset:0;z-index:20;background:#fff;display:flex;flex-direction:column;overflow-y:auto;
+      transform:translateY(100%);transition:transform .25s ease;visibility:hidden}
+    .sheet.open{transform:none;visibility:visible}
+    .sheet::before{content:"";position:absolute;top:-150px;left:50%;margin-left:-190px;width:380px;height:380px;border-radius:50%;
+      background:#eef0f2;pointer-events:none}
+    .sheet > *{position:relative}
+    .sheet .close{position:absolute;z-index:2;top:calc(env(safe-area-inset-top) + 18px);left:16px}
+    .sheet h2{margin:0;text-align:center;font-size:16px;letter-spacing:.05em;font-weight:700;
+      padding:calc(env(safe-area-inset-top) + 26px) 0 34px}
+    .form{padding:0 30px 30px;display:flex;flex-direction:column;gap:22px}
+    .field label{display:block;color:var(--orange);font-weight:700;font-size:12px;letter-spacing:.03em;text-transform:uppercase;margin-bottom:6px}
+    .field input,.field textarea{width:100%;border:0;border-bottom:1px solid #d7dae0;border-radius:0;background:transparent;
+      padding:6px 0;font-size:15px;outline:none}
+    .field input:focus,.field textarea:focus{border-bottom-color:var(--orange)}
+    .field textarea{resize:none;min-height:64px;line-height:1.5;
+      background:repeating-linear-gradient(transparent,transparent 23px,#d7dae0 23px,#d7dae0 24px)}
+    .two{display:grid;grid-template-columns:1.4fr 1fr;gap:22px}
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{display:flex;align-items:center;gap:7px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px;font-size:13px}
+    .chip i{width:9px;height:9px;border-radius:50%;display:block}
+    .chip.on{border-color:var(--orange);background:#fff5e6;font-weight:700}
+    .form-err{color:var(--danger);font-size:13px;text-align:center}
+    .submit{align-self:center;border:0;border-radius:999px;background:var(--orange);color:#fff;font-weight:800;letter-spacing:.05em;
+      padding:14px 44px;box-shadow:var(--shadow);margin-top:6px;text-transform:uppercase}
+    .submit:disabled{opacity:.55}
+    .del{align-self:center;border:0;background:transparent;color:var(--danger);font-weight:700;font-size:13px;padding:6px 10px}
+
+    /* --- login ----------------------------------------------------------- */
+    .login{position:absolute;inset:0;z-index:50;background:#fff;display:flex;align-items:center;justify-content:center;padding:24px}
+    .login-box{width:100%;max-width:340px;display:flex;flex-direction:column;gap:14px;position:relative}
+    .login-box .logo{width:72px;height:72px;border-radius:20px;margin:0 auto 4px;display:block;box-shadow:var(--shadow)}
+    .login-box h1{margin:0;text-align:center;font-size:26px;font-weight:800}
+    .login-box h1 span{color:var(--orange)}
+    .login-box p{margin:0 0 6px;text-align:center;color:var(--muted);font-size:13.5px}
+    .login-err{color:var(--danger);font-size:13px;text-align:center}
+
+    .toast{position:absolute;z-index:60;left:50%;bottom:110px;transform:translate(-50%,20px);background:#16181d;color:#fff;
+      font-size:13px;padding:9px 16px;border-radius:999px;opacity:0;pointer-events:none;transition:.25s;max-width:85%;text-align:center}
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="top">
+      <div>
+        <div class="date-line" id="dateLine"></div>
+        <div class="today" id="dayTag"></div>
+      </div>
+      <button class="icon-btn" id="logoutBtn" aria-label="Esci" title="Esci" hidden>
+        <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
+      </button>
+    </header>
+
+    <div class="week-wrap">
+      <button class="week-nav" id="prevWeek" aria-label="Settimana precedente"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
+      <div class="week" id="week"></div>
+      <button class="week-nav" id="nextWeek" aria-label="Settimana successiva"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+    </div>
+
+    <main class="list" id="list"></main>
+
+    <button class="fab" id="fab" aria-label="Nuova attività"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+
+    <!-- Foglio nuova / modifica attività -->
+    <section class="sheet" id="sheet" aria-hidden="true">
+      <button class="icon-btn close" id="closeSheet" aria-label="Chiudi"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <h2 id="sheetTitle">NUOVA ATTIVITÀ</h2>
+      <form class="form" id="form" novalidate>
+        <div class="field"><label for="fTitle">Nome attività</label><input id="fTitle" maxlength="200" placeholder="Es. Cena dai nonni" autocomplete="off"></div>
+        <div class="two">
+          <div class="field"><label for="fDate">Data</label><input id="fDate" type="date"></div>
+          <div class="field"><label for="fTime">Ora</label><input id="fTime" type="time"></div>
+        </div>
+        <div class="field"><label for="fNote">Aggiungi nota</label><textarea id="fNote" maxlength="1000"></textarea></div>
+        <div class="field"><label>Etichetta</label><div class="chips" id="chips"></div></div>
+        <div class="form-err" id="formErr" hidden></div>
+        <button class="submit" id="submitBtn" type="submit">Crea attività</button>
+        <button class="del" id="delBtn" type="button" hidden>Elimina attività</button>
+      </form>
+    </section>
+
+    <!-- Login (identico nel funzionamento a ComitatoFeste: utente iniziale.cognome + password) -->
+    <section class="login" id="login" hidden>
+      <form class="login-box" id="loginForm">
+        <img class="logo" src="/icon-192.png" alt="">
+        <h1>Famil<span>y</span>Calendar</h1>
+        <p>Accesso riservato alla famiglia.</p>
+        <div class="field"><label for="lgUser">Utente</label><input id="lgUser" autocomplete="username" placeholder="es. g.lima" autocapitalize="none" spellcheck="false"></div>
+        <div class="field"><label for="lgPass">Password</label><input id="lgPass" type="password" autocomplete="current-password"></div>
+        <div class="login-err" id="lgErr" hidden></div>
+        <button class="submit" id="lgBtn" type="submit">Entra</button>
+      </form>
+    </section>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </div>
+
+  <script>
+  (() => {
+    const API = "";
+    const MONTHS = ["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
+    const WD_LONG = ["domenica","lunedì","martedì","mercoledì","giovedì","venerdì","sabato"];
+    const WD_SHORT = ["LUN","MAR","MER","GIO","VEN","SAB","DOM"];
+    const $ = id => document.getElementById(id);
+
+    // --- date helpers (giorni locali come stringhe yyyy-MM-dd, niente UTC) ---
+    const pad = n => String(n).padStart(2, "0");
+    const fmt = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const parse = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+    const addDays = (s, n) => { const d = parse(s); d.setDate(d.getDate() + n); return fmt(d); };
+    const mondayOf = s => { const d = parse(s); return addDays(s, -((d.getDay() + 6) % 7)); };
+    const todayStr = () => fmt(new Date());
+
+    // --- stato ---------------------------------------------------------------
+    let selected = todayStr();
+    let labels = [];
+    const cache = new Map();          // lunedì della settimana -> attività
+    let editing = null;               // attività in modifica (null = nuova)
+    let formLabel = null;
+
+    let token = null, user = null;
+    try { token = localStorage.getItem("fc_token"); user = JSON.parse(localStorage.getItem("fc_user") || "null"); } catch (_) {}
+    const store = (t, u) => {
+      token = t; user = u;
+      try {
+        if (t) { localStorage.setItem("fc_token", t); localStorage.setItem("fc_user", JSON.stringify(u)); }
+        else { localStorage.removeItem("fc_token"); localStorage.removeItem("fc_user"); }
+      } catch (_) {}
+    };
+
+    function toast(msg) {
+      const t = $("toast"); t.textContent = msg; t.classList.add("show");
+      clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show"), 2400);
+    }
+
+    async function api(path, opts = {}) {
+      const r = await fetch(API + path, {
+        ...opts,
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      });
+      if (r.status === 401) { store(null, null); showLogin(); throw new Error("401"); }
+      if (!r.ok) throw new Error((await r.text()).trim() || `Errore HTTP ${r.status}`);
+      return r.status === 204 ? null : r.json();
+    }
+
+    // --- elementi DOM (testo sempre via textContent: niente HTML iniettato) ---
+    function h(tag, props = {}, ...kids) {
+      const e = document.createElement(tag);
+      for (const [k, v] of Object.entries(props)) {
+        if (k === "class") e.className = v;
+        else if (k === "style") e.style.cssText = v;
+        else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+        else e.setAttribute(k, v);
+      }
+      for (const kid of kids) if (kid != null) e.append(kid);
+      return e;
+    }
+    const tint = (hex, a) => {
+      const n = parseInt(hex.slice(1), 16);
+      return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`;
+    };
+    const CHECK = '<svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg>';
+
+    // --- rendering -----------------------------------------------------------
+    function renderHeader() {
+      const d = parse(selected);
+      $("dateLine").textContent = `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+      const t = todayStr();
+      $("dayTag").textContent = selected === t ? "Oggi"
+        : selected === addDays(t, 1) ? "Domani"
+        : selected === addDays(t, -1) ? "Ieri" : WD_LONG[d.getDay()];
+    }
+
+    function weekTasks() { return cache.get(mondayOf(selected)) || []; }
+
+    function renderWeek() {
+      const mon = mondayOf(selected), tasks = weekTasks(), today = todayStr();
+      const wrap = $("week"); wrap.replaceChildren();
+      for (let i = 0; i < 7; i++) {
+        const ds = addDays(mon, i);
+        const colors = [...new Set(tasks.filter(t => t.date === ds).map(t => t.labelColor || "#c9ccd3"))].slice(0, 3);
+        const btn = h("button", { class: "day" + (ds === selected ? " sel" : "") + (ds === today ? " is-today" : ""), type: "button",
+            "aria-label": `${WD_LONG[parse(ds).getDay()]} ${parse(ds).getDate()}`, onclick: () => select(ds) },
+          h("span", { class: "dn" }, WD_SHORT[i]),
+          h("span", { class: "dd" }, String(parse(ds).getDate())),
+          h("span", { class: "dots" }, ...colors.map(c => h("i", { style: `background:${c}` }))));
+        wrap.append(btn);
+      }
+    }
+
+    function renderList() {
+      const list = $("list"); list.replaceChildren();
+      const items = weekTasks().filter(t => t.date === selected);
+      for (const t of items) {
+        const col = t.labelColor;
+        const card = h("button", { class: "card", type: "button", onclick: () => openSheet(t),
+          style: col ? `background:${tint(col, .16)};border-color:${tint(col, .35)}` : "" },
+          h("div", { class: "row" }, h("span", { class: "name" }, t.title), h("span", { class: "time" }, t.time || "")));
+        if (t.note) card.append(h("div", { class: "note" }, t.note));
+        if (t.labelName) card.append(h("div", { class: "lbl" }, h("i", { style: `background:${col}` }), t.labelName));
+        const chk = h("button", { class: "chk", type: "button", "aria-label": "Completata", onclick: () => toggle(t) });
+        chk.innerHTML = CHECK;
+        list.append(h("div", { class: "item" + (t.done ? " done" : "") }, chk, card));
+      }
+      list.append(h("div", { class: "empty" + (items.length ? "" : " none") },
+        items.length ? (selected === todayStr() ? "Nessun'altra attività oggi!" : "Nessun'altra attività")
+                     : (selected === todayStr() ? "Nessuna attività oggi" : "Nessuna attività")));
+    }
+
+    const renderAll = () => { renderHeader(); renderWeek(); renderList(); };
+
+    // --- dati ----------------------------------------------------------------
+    async function loadWeek(force) {
+      const mon = mondayOf(selected);
+      if (force || !cache.has(mon)) {
+        try { cache.set(mon, await api(`/api/tasks?from=${mon}&to=${addDays(mon, 6)}`)); }
+        catch (e) { if (e.message !== "401") toast("Impossibile caricare le attività."); }
+      }
+      renderAll();
+    }
+
+    function select(ds) { selected = ds; renderAll(); loadWeek(); }
+    function shiftWeek(n) { select(addDays(selected, 7 * n)); }
+
+    async function toggle(t) {
+      t.done = !t.done; renderList();   // ottimistico
+      try { Object.assign(t, await api(`/api/tasks/${t.id}/toggle`, { method: "POST" })); }
+      catch (e) { t.done = !t.done; if (e.message !== "401") toast("Operazione non riuscita."); }
+      renderList();
+    }
+
+    // --- foglio nuova / modifica ---------------------------------------------
+    function renderChips() {
+      const box = $("chips"); box.replaceChildren();
+      for (const l of labels) {
+        box.append(h("button", { class: "chip" + (formLabel === l.id ? " on" : ""), type: "button",
+          onclick: () => { formLabel = formLabel === l.id ? null : l.id; renderChips(); } },
+          h("i", { style: `background:${l.color}` }), l.name));
+      }
+    }
+
+    function openSheet(t) {
+      editing = t || null;
+      $("sheetTitle").textContent = t ? "MODIFICA ATTIVITÀ" : "NUOVA ATTIVITÀ";
+      $("submitBtn").textContent = t ? "Salva" : "Crea attività";
+      $("delBtn").hidden = !t;
+      $("fTitle").value = t ? t.title : "";
+      $("fDate").value = t ? t.date : selected;
+      $("fTime").value = t?.time || "";
+      $("fNote").value = t?.note || "";
+      formLabel = t ? t.labelId : null;
+      $("formErr").hidden = true;
+      renderChips();
+      $("sheet").classList.add("open"); $("sheet").setAttribute("aria-hidden", "false");
+      if (!t) setTimeout(() => $("fTitle").focus(), 260);
+    }
+    function closeSheet() { $("sheet").classList.remove("open"); $("sheet").setAttribute("aria-hidden", "true"); document.activeElement?.blur(); }
+
+    $("fab").onclick = () => openSheet(null);
+    $("closeSheet").onclick = closeSheet;
+
+    $("form").onsubmit = async e => {
+      e.preventDefault();
+      const err = $("formErr"), btn = $("submitBtn");
+      err.hidden = true;
+      const body = { title: $("fTitle").value.trim(), date: $("fDate").value, time: $("fTime").value || null,
+                     note: $("fNote").value.trim() || null, labelId: formLabel };
+      if (!body.title) { err.textContent = "Inserisci il nome dell'attività."; err.hidden = false; return; }
+      if (!body.date) { err.textContent = "Scegli una data."; err.hidden = false; return; }
+      btn.disabled = true;
+      try {
+        await api(editing ? `/api/tasks/${editing.id}` : "/api/tasks", { method: editing ? "PUT" : "POST", body: JSON.stringify(body) });
+        cache.clear();
+        selected = body.date;
+        closeSheet();
+        await loadWeek(true);
+        toast(editing ? "Attività aggiornata" : "Attività creata");
+      } catch (ex) {
+        if (ex.message !== "401") { err.textContent = ex.message; err.hidden = false; }
+      } finally { btn.disabled = false; }
+    };
+
+    $("delBtn").onclick = async () => {
+      if (!editing || !confirm("Eliminare questa attività?")) return;
+      try {
+        await api(`/api/tasks/${editing.id}`, { method: "DELETE" });
+        cache.clear(); closeSheet(); await loadWeek(true); toast("Attività eliminata");
+      } catch (ex) { if (ex.message !== "401") toast("Eliminazione non riuscita."); }
+    };
+
+    // --- swipe sulla settimana -----------------------------------------------
+    $("prevWeek").onclick = () => shiftWeek(-1);
+    $("nextWeek").onclick = () => shiftWeek(1);
+    let sx = null;
+    $("week").addEventListener("touchstart", e => { sx = e.touches[0].clientX; }, { passive: true });
+    $("week").addEventListener("touchend", e => {
+      if (sx == null) return;
+      const dx = e.changedTouches[0].clientX - sx; sx = null;
+      if (Math.abs(dx) > 50) shiftWeek(dx < 0 ? 1 : -1);
+    });
+    // tocca la data per tornare a oggi
+    $("dateLine").onclick = $("dayTag").onclick = () => select(todayStr());
+
+    // --- login ---------------------------------------------------------------
+    function showLogin() { $("login").hidden = false; $("logoutBtn").hidden = true; $("lgUser").focus(); }
+    function hideLogin() { $("login").hidden = true; $("logoutBtn").hidden = false; }
+
+    $("logoutBtn").onclick = () => { store(null, null); cache.clear(); showLogin(); };
+
+    $("loginForm").onsubmit = async e => {
+      e.preventDefault();
+      const btn = $("lgBtn"), err = $("lgErr");
+      err.hidden = true; btn.disabled = true;
+      try {
+        const r = await fetch(`${API}/api/auth/login`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: $("lgUser").value.trim(), password: $("lgPass").value }),
+        });
+        if (!r.ok) {
+          err.textContent = r.status === 401 ? "Utente o password non validi." : `Errore: HTTP ${r.status}`;
+          err.hidden = false; return;
+        }
+        const d = await r.json();
+        store(d.token, { username: d.username, memberId: d.memberId, displayName: d.displayName, role: d.role });
+        $("lgPass").value = "";
+        hideLogin(); start();
+      } catch (_) {
+        err.textContent = "Server non raggiungibile."; err.hidden = false;
+      } finally { btn.disabled = false; }
+    };
+
+    async function start() {
+      try { labels = await api("/api/labels"); } catch (_) {}
+      await loadWeek(true);
+    }
+
+    (async () => {
+      renderAll();
+      let enabled = true;
+      try { const r = await fetch(`${API}/api/auth/status`); if (r.ok) enabled = (await r.json()).enabled; } catch (_) {}
+      if (enabled && !token) showLogin();
+      else { if (enabled) hideLogin(); start(); }
+    })();
+
+    // Riallinea "oggi" se l'app resta aperta a cavallo della mezzanotte / torna in primo piano.
+    let lastDay = todayStr();
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) return;
+      const t = todayStr();
+      if (t !== lastDay) { if (selected === lastDay) selected = t; lastDay = t; }
+      if (token || $("login").hidden) loadWeek(true);
+    });
+
+    if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+  })();
+  </script>
+</body>
+</html>

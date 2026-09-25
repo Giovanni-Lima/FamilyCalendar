@@ -1,0 +1,49 @@
+# Ambiente locale completo per il test: MySQL + app (API + frontend).
+#   docker compose up --build        -> app su http://localhost:8080
+#   docker compose down -v           -> spegne e cancella anche i dati del DB
+#
+# Login di prova: utente "g.lima" (admin) o "m.rossi", password "famiglia".
+# Le variabili sono sovrascrivibili da un file .env (non committato).
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: familycalendar-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: familycalendar
+      TZ: Europe/Rome
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    ports:
+      - "3307:3306"   # 3307 sull'host per non collidere con un MySQL locale
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  app:
+    build: .
+    container_name: familycalendar-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      PORT: "8080"
+      FAMILYCALENDAR_CONNECTION: "Server=db;Port=3306;Database=familycalendar;User=root;Password=${MYSQL_ROOT_PASSWORD:-root}"
+      FAMILYCALENDAR_AUTH_PASSWORD: ${FAMILYCALENDAR_AUTH_PASSWORD:-famiglia}
+      FAMILYCALENDAR_AUTH_PASSWORD_ADMIN: ${FAMILYCALENDAR_AUTH_PASSWORD_ADMIN:-admin}
+      FAMILYCALENDAR_AUTH_SECRET: ${FAMILYCALENDAR_AUTH_SECRET:-cambiami-con-una-stringa-lunga-e-casuale}
+      # Membri iniziali (creati solo se la tabella è vuota): "Nome Cognome[:admin];..."
+      FAMILYCALENDAR_MEMBERS: ${FAMILYCALENDAR_MEMBERS:-Giovanni Lima:admin;Maria Rossi}
+
+volumes:
+  dbdata:
