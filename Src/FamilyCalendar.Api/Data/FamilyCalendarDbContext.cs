@@ -12,6 +12,7 @@ public class FamilyCalendarDbContext : DbContext
     public DbSet<Member> Members => Set<Member>();
     public DbSet<Label> Labels => Set<Label>();
     public DbSet<TaskItem> Tasks => Set<TaskItem>();
+    public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -34,6 +35,16 @@ public class FamilyCalendarDbContext : DbContext
                 new Label { Id = 3, Name = "Scuola", Color = "#f2c500" },
                 new Label { Id = 4, Name = "Salute", Color = "#e5484d" },
                 new Label { Id = 5, Name = "Altro", Color = "#8a8f98" });
+        });
+
+        b.Entity<PushSubscription>(e =>
+        {
+            e.HasKey(p => p.Id);
+            e.Property(p => p.Endpoint).IsRequired().HasMaxLength(512);
+            e.Property(p => p.P256dh).IsRequired().HasMaxLength(200);
+            e.Property(p => p.Auth).IsRequired().HasMaxLength(100);
+            e.HasIndex(p => p.Endpoint).IsUnique();
+            e.HasOne(p => p.Member).WithMany().HasForeignKey(p => p.MemberId).OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<TaskItem>(e =>

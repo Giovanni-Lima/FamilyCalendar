@@ -43,7 +43,7 @@
 
     /* --- intestazione ---------------------------------------------------- */
     .top{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-start;
-      padding:calc(env(safe-area-inset-top) + 34px) 22px 0}
+      padding:calc(env(safe-area-inset-top) + 150px) 22px 0}
     .date-line{font-size:17px;letter-spacing:.01em;text-transform:uppercase}
     .today{color:var(--orange);font-weight:800;font-size:17px;letter-spacing:.02em;text-transform:uppercase;margin-top:2px}
     .icon-btn{width:38px;height:38px;border-radius:50%;border:0;background:transparent;display:grid;place-items:center;
@@ -51,7 +51,7 @@
     .icon-btn svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
     /* --- striscia della settimana --------------------------------------- */
-    .week-wrap{position:relative;z-index:1;margin:26px 0 0;padding:0 16px;display:flex;align-items:center;gap:4px}
+    .week-wrap{position:relative;z-index:1;margin:34px 0 0;padding:0 16px;display:flex;align-items:center;gap:4px}
     .week-nav{flex:0 0 auto;width:22px;height:44px;border:0;background:transparent;color:var(--orange);display:grid;place-items:center;padding:0}
     .week-nav svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
     .week{flex:1;display:grid;grid-template-columns:repeat(7,1fr);gap:6px;touch-action:pan-y}
@@ -86,7 +86,6 @@
     .item.done .name,.item.done .time{text-decoration:line-through}
     .item.done .card{opacity:.55}
     .empty{text-align:center;color:var(--yellow);font-weight:800;font-size:13.5px;margin-top:22px;letter-spacing:.01em}
-    .empty.none{color:var(--muted);font-weight:600}
 
     /* --- pulsante + ------------------------------------------------------ */
     .fab{position:absolute;z-index:5;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 26px);
@@ -102,9 +101,9 @@
     .sheet::before{content:"";position:absolute;top:-150px;left:50%;margin-left:-190px;width:380px;height:380px;border-radius:50%;
       background:#eef0f2;pointer-events:none}
     .sheet > *{position:relative}
-    .sheet .close{position:absolute;z-index:2;top:calc(env(safe-area-inset-top) + 18px);left:16px}
+    .sheet .close{position:absolute;z-index:2;top:calc(env(safe-area-inset-top) + 34px);left:14px}
     .sheet h2{margin:0;text-align:center;font-size:16px;letter-spacing:.05em;font-weight:700;
-      padding:calc(env(safe-area-inset-top) + 26px) 0 34px}
+      padding:calc(env(safe-area-inset-top) + 150px) 0 34px}
     .form{padding:0 30px 30px;display:flex;flex-direction:column;gap:22px}
     .field label{display:block;color:var(--orange);font-weight:700;font-size:12px;letter-spacing:.03em;text-transform:uppercase;margin-bottom:6px}
     .field input,.field textarea{width:100%;border:0;border-bottom:1px solid #d7dae0;border-radius:0;background:transparent;
@@ -123,6 +122,27 @@
     .submit:disabled{opacity:.55}
     .del{align-self:center;border:0;background:transparent;color:var(--danger);font-weight:700;font-size:13px;padding:6px 10px}
 
+    /* Campanella + logout: fissi in alto a destra, indipendenti dal padding di .top */
+    .top-actions{position:absolute;z-index:3;top:calc(env(safe-area-inset-top) + 34px);right:14px;display:flex;gap:2px}
+
+    /* --- calendario mensile (si apre dal click sulla data) ---------------------- */
+    .date-line,.today{cursor:pointer}
+    .cal{position:absolute;z-index:30;inset:0;background:rgba(22,24,29,.35);display:flex;justify-content:center;align-items:flex-start;
+      padding:calc(env(safe-area-inset-top) + 90px) 16px 16px}
+    .cal-box{width:100%;max-width:360px;background:#fff;border-radius:20px;box-shadow:0 14px 40px rgba(0,0,0,.25);padding:16px 14px 12px}
+    .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .cal-title{font-weight:800;font-size:15px;text-transform:capitalize}
+    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);row-gap:4px;text-align:center}
+    .cal-wd{font-size:11px;font-weight:700;color:var(--orange);padding:4px 0}
+    .cal-d{border:0;background:transparent;border-radius:10px;height:40px;font-size:14px;font-weight:600;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;gap:2px;padding:0}
+    .cal-d.is-today{box-shadow:inset 0 0 0 1.5px var(--orange)}
+    .cal-d.sel{background:var(--orange);color:#fff;box-shadow:var(--shadow)}
+    .cal-d .dots{display:flex;gap:2px;height:5px}
+    .cal-d .dots i{width:4px;height:4px;border-radius:50%;display:block}
+    .cal-foot{display:flex;justify-content:space-between;margin-top:8px}
+    .cal-foot button{border:0;background:transparent;color:var(--orange-dark);font-weight:800;font-size:13px;padding:8px 10px;text-transform:uppercase;letter-spacing:.03em}
+
     /* --- login ----------------------------------------------------------- */
     .login{position:absolute;inset:0;z-index:50;background:#fff;display:flex;align-items:center;justify-content:center;padding:24px}
     .login-box{width:100%;max-width:340px;display:flex;flex-direction:column;gap:14px;position:relative}
@@ -132,7 +152,7 @@
     .login-box p{margin:0 0 6px;text-align:center;color:var(--muted);font-size:13.5px}
     .login-err{color:var(--danger);font-size:13px;text-align:center}
 
-    .toast{position:absolute;z-index:60;left:50%;bottom:110px;transform:translate(-50%,20px);background:#16181d;color:#fff;
+    .toast{position:absolute;z-index:60;left:50%;bottom:110px;transform:translate(-50%,20px);background:var(--orange);color:#fff;font-weight:700;box-shadow:var(--shadow);
       font-size:13px;padding:9px 16px;border-radius:999px;opacity:0;pointer-events:none;transition:.25s;max-width:85%;text-align:center}
     .toast.show{opacity:1;transform:translate(-50%,0)}
   </style>
@@ -144,10 +164,16 @@
         <div class="date-line" id="dateLine"></div>
         <div class="today" id="dayTag"></div>
       </div>
+    </header>
+    <div class="top-actions">
+      <button class="icon-btn" id="bellBtn" aria-label="Attiva le notifiche" title="Notifiche" hidden>
+        <svg id="bellOn" viewBox="0 0 24 24" hidden><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+        <svg id="bellOff" viewBox="0 0 24 24"><path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="m2 2 20 20"/></svg>
+      </button>
       <button class="icon-btn" id="logoutBtn" aria-label="Esci" title="Esci" hidden>
         <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
       </button>
-    </header>
+    </div>
 
     <div class="week-wrap">
       <button class="week-nav" id="prevWeek" aria-label="Settimana precedente"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
@@ -189,6 +215,18 @@
         <button class="submit" id="lgBtn" type="submit">Entra</button>
       </form>
     </section>
+
+    <div class="cal" id="cal" hidden>
+      <div class="cal-box" role="dialog" aria-label="Scegli una data">
+        <div class="cal-head">
+          <button class="week-nav" id="calPrev" type="button" aria-label="Mese precedente"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
+          <span class="cal-title" id="calTitle"></span>
+          <button class="week-nav" id="calNext" type="button" aria-label="Mese successivo"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="cal-foot"><button id="calToday" type="button">Oggi</button><button id="calClose" type="button">Chiudi</button></div>
+      </div>
+    </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </div>
@@ -300,9 +338,7 @@
         chk.innerHTML = CHECK;
         list.append(h("div", { class: "item" + (t.done ? " done" : "") }, chk, card));
       }
-      list.append(h("div", { class: "empty" + (items.length ? "" : " none") },
-        items.length ? (selected === todayStr() ? "Nessun'altra attività oggi!" : "Nessun'altra attività")
-                     : (selected === todayStr() ? "Nessuna attività oggi" : "Nessuna attività")));
+      if (!items.length) list.append(h("div", { class: "empty" }, "Nessuna attività"));
     }
 
     const renderAll = () => { renderHeader(); renderWeek(); renderList(); };
@@ -396,14 +432,107 @@
       const dx = e.changedTouches[0].clientX - sx; sx = null;
       if (Math.abs(dx) > 50) shiftWeek(dx < 0 ? 1 : -1);
     });
-    // tocca la data per tornare a oggi
-    $("dateLine").onclick = $("dayTag").onclick = () => select(todayStr());
+    // --- calendario mensile: tocca la data in alto per saltare a un altro giorno ---
+    let calMonth = null;          // primo giorno del mese mostrato
+    const calCache = new Map();   // "yyyy-MM" -> attività del mese (per i puntini)
+
+    async function renderCal() {
+      const y = calMonth.getFullYear(), m = calMonth.getMonth();
+      const key = `${y}-${pad(m + 1)}`;
+      $("calTitle").textContent = `${MONTHS[m]} ${y}`;
+
+      const grid = $("calGrid"); grid.replaceChildren();
+      for (const w of ["L", "M", "M", "G", "V", "S", "D"]) grid.append(h("div", { class: "cal-wd" }, w));
+      for (let i = (calMonth.getDay() + 6) % 7; i > 0; i--) grid.append(h("div"));
+
+      const today = todayStr(), tasks = calCache.get(key) || [];
+      for (let d = 1, n = new Date(y, m + 1, 0).getDate(); d <= n; d++) {
+        const ds = `${key}-${pad(d)}`;
+        const colors = [...new Set(tasks.filter(t => t.date === ds).map(t => t.labelColor || "#c9ccd3"))].slice(0, 3);
+        grid.append(h("button", { class: "cal-d" + (ds === selected ? " sel" : "") + (ds === today ? " is-today" : ""), type: "button",
+            onclick: () => { closeCal(); select(ds); } },
+          String(d), h("span", { class: "dots" }, ...colors.map(c => h("i", { style: `background:${ds === selected ? "#fff" : c}` })))));
+      }
+
+      if (!calCache.has(key)) {   // puntini: carica il mese e ridisegna se è ancora quello visibile
+        try {
+          calCache.set(key, await api(`/api/tasks?from=${key}-01&to=${key}-${pad(new Date(y, m + 1, 0).getDate())}`));
+          if (!$("cal").hidden && calMonth.getFullYear() === y && calMonth.getMonth() === m) renderCal();
+        } catch (_) {}
+      }
+    }
+    function openCal() {
+      const d = parse(selected);
+      calCache.clear();   // le attività possono essere cambiate dall'ultima apertura
+      calMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+      $("cal").hidden = false; renderCal();
+    }
+    function closeCal() { $("cal").hidden = true; }
+    const shiftMonth = n => { calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + n, 1); renderCal(); };
+
+    $("dateLine").onclick = $("dayTag").onclick = openCal;
+    $("calPrev").onclick = () => shiftMonth(-1);
+    $("calNext").onclick = () => shiftMonth(1);
+    $("calToday").onclick = () => { closeCal(); select(todayStr()); };
+    $("calClose").onclick = closeCal;
+    $("cal").onclick = e => { if (e.target === $("cal")) closeCal(); };
 
     // --- login ---------------------------------------------------------------
-    function showLogin() { $("login").hidden = false; $("logoutBtn").hidden = true; $("lgUser").focus(); }
-    function hideLogin() { $("login").hidden = true; $("logoutBtn").hidden = false; }
+    function showLogin() { $("login").hidden = false; $("bellBtn").hidden = $("logoutBtn").hidden = true; $("lgUser").focus(); }
+    function hideLogin() { $("login").hidden = true; $("bellBtn").hidden = $("logoutBtn").hidden = false; }
 
     $("logoutBtn").onclick = () => { store(null, null); cache.clear(); showLogin(); };
+
+    // --- campanella: attiva / disattiva le notifiche push --------------------------
+    const pushSupported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+    const b64ToU8 = b64 => {
+      const pad = "=".repeat((4 - b64.length % 4) % 4);
+      const raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
+      return Uint8Array.from(raw, c => c.charCodeAt(0));
+    };
+    const saveSub = sub => {
+      const j = sub.toJSON();
+      return api("/api/push/subscribe", { method: "POST", body: JSON.stringify({ endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth }) });
+    };
+
+    // Pallino arancione = notifiche attive su questo dispositivo. Se il browser è già
+    // sottoscritto riallinea il server (idempotente: copre DB azzerato o cambio utente).
+    async function refreshBell() {
+      let on = false;
+      if (pushSupported && Notification.permission === "granted") {
+        try {
+          const sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+          if (sub) { on = true; if (token) saveSub(sub).catch(() => {}); }
+        } catch (_) {}
+      }
+      // toggleAttribute: la proprietà .hidden non esiste sugli elementi SVG
+      $("bellOn").toggleAttribute("hidden", !on);
+      $("bellOff").toggleAttribute("hidden", on);
+      $("bellBtn").setAttribute("aria-label", on ? "Disattiva le notifiche" : "Attiva le notifiche");
+    }
+
+    $("bellBtn").onclick = async () => {
+      if (!pushSupported) { toast("Notifiche non supportate qui. Su iPhone installa prima l'app."); return; }
+      const btn = $("bellBtn"); btn.disabled = true;
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+          await api("/api/push/unsubscribe", { method: "POST", body: JSON.stringify({ endpoint: sub.endpoint }) });
+          await sub.unsubscribe();
+          toast("Notifiche disattivate");
+        } else {
+          let key;
+          try { key = (await api("/api/push/key")).publicKey; }
+          catch (e) { if (e.message === "401") return; toast("Notifiche non configurate sul server."); return; }
+          if (await Notification.requestPermission() !== "granted") { toast("Permesso negato: abilita le notifiche dalle impostazioni del browser."); return; }
+          await saveSub(await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(key) }));
+          toast("Notifiche attivate");
+        }
+      } catch (e) {
+        if (e.message !== "401") toast("Impossibile modificare le notifiche.");
+      } finally { btn.disabled = false; refreshBell(); }
+    };
 
     $("loginForm").onsubmit = async e => {
       e.preventDefault();
@@ -421,7 +550,7 @@
         const d = await r.json();
         store(d.token, { username: d.username, memberId: d.memberId, displayName: d.displayName, role: d.role });
         $("lgPass").value = "";
-        hideLogin(); start();
+        hideLogin(); start(); refreshBell();
       } catch (_) {
         err.textContent = "Server non raggiungibile."; err.hidden = false;
       } finally { btn.disabled = false; }
@@ -437,7 +566,7 @@
       let enabled = true;
       try { const r = await fetch(`${API}/api/auth/status`); if (r.ok) enabled = (await r.json()).enabled; } catch (_) {}
       if (enabled && !token) showLogin();
-      else { if (enabled) hideLogin(); start(); }
+      else { if (enabled) hideLogin(); else $("bellBtn").hidden = false; start(); refreshBell(); }
     })();
 
     // Riallinea "oggi" se l'app resta aperta a cavallo della mezzanotte / torna in primo piano.

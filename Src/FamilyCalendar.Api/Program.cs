@@ -21,6 +21,7 @@ builder.Services.AddDbContext<FamilyCalendarDbContext>(o =>
         my => my.EnableRetryOnFailure()));
 
 builder.Services.AddSingleton<AuthService>();
+builder.Services.AddSingleton<PushSender>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

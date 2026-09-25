@@ -15,7 +15,13 @@ public sealed class TasksController : ControllerBase
 {
     private readonly FamilyCalendarDbContext _db;
 
-    public TasksController(FamilyCalendarDbContext db) => _db = db;
+    private readonly PushSender _push;
+
+    public TasksController(FamilyCalendarDbContext db, PushSender push)
+    {
+        _db = db;
+        _push = push;
+    }
 
     /// <summary>Date in formato <c>yyyy-MM-dd</c>, Time in formato <c>HH:mm</c> (o vuoto).</summary>
     public sealed record TaskRequest(string? Title, string? Date, string? Time, string? Note, int? LabelId);
@@ -56,7 +62,12 @@ public sealed class TasksController : ControllerBase
         task.CreatedByMemberId = (HttpContext.Items[TokenAuthAttribute.PrincipalKey] as AuthService.Principal)?.MemberId;
         _db.Tasks.Add(task);
         await _db.SaveChangesAsync(ct);
-        return Ok(await Load(task.Id, ct));
+
+        var dto = await Load(task.Id, ct);
+        var when = task.Date.ToString("dd/MM", CultureInfo.InvariantCulture) + (dto.Time is null ? "" : $" {dto.Time}");
+        _ = _push.NotifyAllAsync("Nuova attività",
+            $"{dto.CreatedBy ?? "Qualcuno"}: {dto.Title} ({when})", task.CreatedByMemberId);
+        return Ok(dto);
     }
 
     [HttpPut("{id:int}")]

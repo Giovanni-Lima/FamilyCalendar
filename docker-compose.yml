@@ -42,6 +42,11 @@ services:
       FAMILYCALENDAR_AUTH_PASSWORD: ${FAMILYCALENDAR_AUTH_PASSWORD:-famiglia}
       FAMILYCALENDAR_AUTH_PASSWORD_ADMIN: ${FAMILYCALENDAR_AUTH_PASSWORD_ADMIN:-admin}
       FAMILYCALENDAR_AUTH_SECRET: ${FAMILYCALENDAR_AUTH_SECRET:-cambiami-con-una-stringa-lunga-e-casuale}
+      # Chiavi VAPID per le notifiche push. Queste sono SOLO per il test locale: per il deploy
+      # generane di nuove con `npx web-push generate-vapid-keys` e impostale come env/secret.
+      FAMILYCALENDAR_VAPID_PUBLIC: ${FAMILYCALENDAR_VAPID_PUBLIC:-BORlyOntHuybzlcyD3KRWvp3ROrf_7lczSqLMatxT53aIhXE2QXr8rx8NLMcVgdeVFrCH7n0Wll5L5Jb2cM3Vsg}
+      FAMILYCALENDAR_VAPID_PRIVATE: ${FAMILYCALENDAR_VAPID_PRIVATE:-C3r5yWRzvAd3RoCCt_o8bnwuA4e2kME-UCTiJfCaeuU}
+      FAMILYCALENDAR_VAPID_SUBJECT: ${FAMILYCALENDAR_VAPID_SUBJECT:-mailto:giovannilima800@gmail.com}
       # Membri iniziali (creati solo se la tabella è vuota): "Nome Cognome[:admin];..."
       FAMILYCALENDAR_MEMBERS: ${FAMILYCALENDAR_MEMBERS:-Giovanni Lima:admin;Maria Rossi}
 
