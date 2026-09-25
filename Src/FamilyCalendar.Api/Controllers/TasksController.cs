@@ -64,11 +64,16 @@ public sealed class TasksController : ControllerBase
         await _db.SaveChangesAsync(ct);
 
         var dto = await Load(task.Id, ct);
-        var when = task.Date.ToString("dd/MM", CultureInfo.InvariantCulture) + (dto.Time is null ? "" : $" {dto.Time}");
         _ = _push.NotifyAllAsync("Nuova attività",
-            $"{dto.CreatedBy ?? "Qualcuno"}: {dto.Title} ({when})", task.CreatedByMemberId);
+            $"{dto.CreatedBy ?? "Qualcuno"}: {dto.Title} ({When(task, dto)})", task.CreatedByMemberId);
         return Ok(dto);
     }
+
+    private static string When(TaskItem task, TaskDto dto) =>
+        task.Date.ToString("dd/MM", CultureInfo.InvariantCulture) + (dto.Time is null ? "" : $" {dto.Time}");
+
+    private async Task<string> EditorName(int memberId, CancellationToken ct) =>
+        await _db.Members.Where(m => m.Id == memberId).Select(m => m.DisplayName).FirstOrDefaultAsync(ct) ?? "Qualcuno";
 
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, [FromBody] TaskRequest req, CancellationToken ct)
@@ -82,7 +87,13 @@ public sealed class TasksController : ControllerBase
             return BadRequest("Etichetta inesistente.");
 
         await _db.SaveChangesAsync(ct);
-        return Ok(await Load(id, ct));
+
+        var dto = await Load(id, ct);
+        var editor = HttpContext.Items[TokenAuthAttribute.PrincipalKey] as AuthService.Principal;
+        var editorName = editor is null ? "Qualcuno" : await EditorName(editor.MemberId, ct);
+        _ = _push.NotifyAllAsync("Attività modificata",
+            $"{editorName}: {dto.Title} ({When(task, dto)})", editor?.MemberId);
+        return Ok(dto);
     }
 
     [HttpPost("{id:int}/toggle")]

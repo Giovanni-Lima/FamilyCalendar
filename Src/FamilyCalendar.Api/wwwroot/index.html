@@ -81,7 +81,10 @@
     .card .name{font-weight:700;font-size:14.5px;overflow-wrap:anywhere}
     .card .time{font-size:13px;font-weight:500;white-space:nowrap}
     .card .note{font-size:11.5px;color:#4b5058;margin-top:4px;white-space:pre-wrap;overflow-wrap:anywhere}
-    .card .lbl{display:flex;align-items:center;gap:5px;font-size:10px;margin-top:6px;color:#4b5058}
+    .card .meta{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:6px;font-size:10px;color:#4b5058}
+    .card .lbl{display:flex;align-items:center;gap:5px}
+    .card .by{color:var(--muted);font-style:italic;white-space:nowrap}
+    .by-line{color:var(--muted);font-size:12px;text-align:center;margin-top:-10px}
     .card .lbl i{width:6px;height:6px;border-radius:50%;display:block}
     .item.done .name,.item.done .time{text-decoration:line-through}
     .item.done .card{opacity:.55}
@@ -104,23 +107,28 @@
     .sheet .close{position:absolute;z-index:2;top:calc(env(safe-area-inset-top) + 34px);left:14px}
     .sheet h2{margin:0;text-align:center;font-size:16px;letter-spacing:.05em;font-weight:700;
       padding:calc(env(safe-area-inset-top) + 150px) 0 34px}
-    .form{padding:0 30px 30px;display:flex;flex-direction:column;gap:22px}
+    /* Il pulsante di invio sta sempre dove sta il "+" della home (centrato, a 34px dal fondo:
+       il suo centro coincide con quello del FAB da 62px a 26px), anche se il form scorre. */
+    .form{flex:1 0 auto;padding:0 30px calc(env(safe-area-inset-bottom) + 34px);display:flex;flex-direction:column;gap:22px}
     .field label{display:block;color:var(--orange);font-weight:700;font-size:12px;letter-spacing:.03em;text-transform:uppercase;margin-bottom:6px}
     .field input,.field textarea{width:100%;border:0;border-bottom:1px solid #d7dae0;border-radius:0;background:transparent;
       padding:6px 0;font-size:15px;outline:none}
     .field input:focus,.field textarea:focus{border-bottom-color:var(--orange)}
-    .field textarea{resize:none;min-height:64px;line-height:1.5;
-      background:repeating-linear-gradient(transparent,transparent 23px,#d7dae0 23px,#d7dae0 24px)}
+    .field textarea{resize:none;min-height:80px;line-height:1.5}
     .two{display:grid;grid-template-columns:1.4fr 1fr;gap:22px}
-    .chips{display:flex;flex-wrap:wrap;gap:8px}
-    .chip{display:flex;align-items:center;gap:7px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px;font-size:13px}
+    .chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+    .chip{flex:0 0 calc((100% - 16px) / 3);justify-content:center;display:flex;align-items:center;gap:7px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px;font-size:13px}
     .chip i{width:9px;height:9px;border-radius:50%;display:block}
     .chip.on{border-color:var(--orange);background:#fff5e6;font-weight:700}
     .form-err{color:var(--danger);font-size:13px;text-align:center}
     .submit{align-self:center;border:0;border-radius:999px;background:var(--orange);color:#fff;font-weight:800;letter-spacing:.05em;
       padding:14px 44px;box-shadow:var(--shadow);margin-top:6px;text-transform:uppercase}
+    /* Barra azioni fissa in basso: in modifica "Salva" a sinistra e "Elimina" (danger) a destra. */
+    .actions{position:sticky;bottom:calc(env(safe-area-inset-bottom) + 34px);margin-top:auto;z-index:2;display:flex;justify-content:center;gap:12px}
+    .actions .submit{margin-top:0}
+    .actions.two .submit{flex:1;padding-left:0;padding-right:0}
+    .actions .del{background:var(--danger);box-shadow:0 8px 20px rgba(229,72,77,.35)}
     .submit:disabled{opacity:.55}
-    .del{align-self:center;border:0;background:transparent;color:var(--danger);font-weight:700;font-size:13px;padding:6px 10px}
 
     /* Campanella + logout: fissi in alto a destra, indipendenti dal padding di .top */
     .top-actions{position:absolute;z-index:3;top:calc(env(safe-area-inset-top) + 34px);right:14px;display:flex;gap:2px}
@@ -190,6 +198,7 @@
       <button class="icon-btn close" id="closeSheet" aria-label="Chiudi"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
       <h2 id="sheetTitle">NUOVA ATTIVITÀ</h2>
       <form class="form" id="form" novalidate>
+        <div class="by-line" id="byLine" hidden></div>
         <div class="field"><label for="fTitle">Nome attività</label><input id="fTitle" maxlength="200" placeholder="Es. Cena dai nonni" autocomplete="off"></div>
         <div class="two">
           <div class="field"><label for="fDate">Data</label><input id="fDate" type="date"></div>
@@ -198,8 +207,10 @@
         <div class="field"><label for="fNote">Aggiungi nota</label><textarea id="fNote" maxlength="1000"></textarea></div>
         <div class="field"><label>Etichetta</label><div class="chips" id="chips"></div></div>
         <div class="form-err" id="formErr" hidden></div>
-        <button class="submit" id="submitBtn" type="submit">Crea attività</button>
-        <button class="del" id="delBtn" type="button" hidden>Elimina attività</button>
+        <div class="actions" id="actions">
+          <button class="submit" id="submitBtn" type="submit">Crea attività</button>
+          <button class="submit del" id="delBtn" type="button" hidden>Elimina</button>
+        </div>
       </form>
     </section>
 
@@ -333,7 +344,9 @@
           style: col ? `background:${tint(col, .16)};border-color:${tint(col, .35)}` : "" },
           h("div", { class: "row" }, h("span", { class: "name" }, t.title), h("span", { class: "time" }, t.time || "")));
         if (t.note) card.append(h("div", { class: "note" }, t.note));
-        if (t.labelName) card.append(h("div", { class: "lbl" }, h("i", { style: `background:${col}` }), t.labelName));
+        if (t.labelName || t.createdBy) card.append(h("div", { class: "meta" },
+          h("span", { class: "lbl" }, t.labelName ? h("i", { style: `background:${col}` }) : null, t.labelName || ""),
+          t.createdBy ? h("span", { class: "by" }, t.createdBy) : null));
         const chk = h("button", { class: "chk", type: "button", "aria-label": "Completata", onclick: () => toggle(t) });
         chk.innerHTML = CHECK;
         list.append(h("div", { class: "item" + (t.done ? " done" : "") }, chk, card));
@@ -378,6 +391,9 @@
       $("sheetTitle").textContent = t ? "MODIFICA ATTIVITÀ" : "NUOVA ATTIVITÀ";
       $("submitBtn").textContent = t ? "Salva" : "Crea attività";
       $("delBtn").hidden = !t;
+      $("actions").classList.toggle("two", !!t);
+      $("byLine").hidden = !t?.createdBy;
+      $("byLine").textContent = t?.createdBy ? `Creata da ${t.createdBy}` : "";
       $("fTitle").value = t ? t.title : "";
       $("fDate").value = t ? t.date : selected;
       $("fTime").value = t?.time || "";

@@ -31,7 +31,7 @@ public class FamilyCalendarDbContext : DbContext
             e.Property(l => l.Color).IsRequired().HasMaxLength(7);
             e.HasData(
                 new Label { Id = 1, Name = "Famiglia", Color = "#2fb344" },
-                new Label { Id = 2, Name = "Lavoro", Color = "#ff9a1f" },
+                new Label { Id = 2, Name = "Lavoro", Color = "#3b82f6" },
                 new Label { Id = 3, Name = "Scuola", Color = "#f2c500" },
                 new Label { Id = 4, Name = "Salute", Color = "#e5484d" },
                 new Label { Id = 5, Name = "Altro", Color = "#8a8f98" });
