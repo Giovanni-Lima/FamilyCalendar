@@ -4,4 +4,6 @@ obj/
 .idea/
 *.user
 .env
+.env.*
+*.local
 Thumbs.db
