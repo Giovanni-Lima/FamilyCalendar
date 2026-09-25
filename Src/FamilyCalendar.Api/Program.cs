@@ -22,6 +22,19 @@ builder.Services.AddDbContext<FamilyCalendarDbContext>(o =>
 
 builder.Services.AddSingleton<AuthService>();
 builder.Services.AddSingleton<PushSender>();
+builder.Services.AddHttpClient<PlaceSearch>(c =>
+{
+    c.BaseAddress = new Uri("https://photon.komoot.io/");
+    c.Timeout = TimeSpan.FromSeconds(4);
+    c.DefaultRequestHeaders.UserAgent.ParseAdd("FamilyCalendar/1.0 (giovannilima800@gmail.com)");
+});
+builder.Services.AddHttpClient<Geocoder>(c =>
+{
+    c.BaseAddress = new Uri("https://nominatim.openstreetmap.org/");
+    c.Timeout = TimeSpan.FromSeconds(4);
+    c.DefaultRequestHeaders.UserAgent.ParseAdd("FamilyCalendar/1.0 (giovannilima800@gmail.com)");
+    c.DefaultRequestHeaders.AcceptLanguage.ParseAdd("it");
+});
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

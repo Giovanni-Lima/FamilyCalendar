@@ -16,23 +16,55 @@ public sealed class TasksController : ControllerBase
     private readonly FamilyCalendarDbContext _db;
 
     private readonly PushSender _push;
+    private readonly Geocoder _geocoder;
 
-    public TasksController(FamilyCalendarDbContext db, PushSender push)
+    public TasksController(FamilyCalendarDbContext db, PushSender push, Geocoder geocoder)
     {
         _db = db;
         _push = push;
+        _geocoder = geocoder;
     }
 
     /// <summary>Date in formato <c>yyyy-MM-dd</c>, Time in formato <c>HH:mm</c> (o vuoto).</summary>
-    public sealed record TaskRequest(string? Title, string? Date, string? Time, string? Note, int? LabelId);
+    public sealed record TaskRequest(string? Title, string? Date, string? Time, string? Note, int? LabelId, string? Address,
+        double? Latitude = null, double? Longitude = null);
 
     public sealed record TaskDto(int Id, string Title, string Date, string? Time, string? Note, bool Done,
-        int? LabelId, string? LabelName, string? LabelColor, string? CreatedBy);
+        int? LabelId, string? LabelName, string? LabelColor, string? CreatedBy,
+        string? Address, double? Latitude, double? Longitude);
 
     private static TaskDto ToDto(TaskItem t) => new(
         t.Id, t.Title, t.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         t.Time?.ToString("HH:mm", CultureInfo.InvariantCulture), t.Note, t.Done,
-        t.LabelId, t.Label?.Name, t.Label?.Color, t.CreatedBy?.DisplayName);
+        t.LabelId, t.Label?.Name, t.Label?.Color, t.CreatedBy?.DisplayName,
+        t.Address, t.Latitude, t.Longitude);
+
+    /// <summary>Se l'indirizzo è cambiato rispetto a <paramref name="previous"/>, ricalcola (o azzera) le coordinate.</summary>
+    private async Task GeocodeIfChangedAsync(TaskItem task, TaskRequest req, string? previous, CancellationToken ct)
+    {
+        // Luogo scelto dai suggerimenti: il client manda già le coordinate esatte, niente geocodifica.
+        if (task.Address is not null && req.Latitude is >= -90 and <= 90 && req.Longitude is >= -180 and <= 180)
+        {
+            task.Latitude = req.Latitude;
+            task.Longitude = req.Longitude;
+            return;
+        }
+
+        if (string.Equals(task.Address, previous, StringComparison.Ordinal))
+            return;
+
+        task.Latitude = task.Longitude = null;
+        if (task.Address is null)
+            return;
+
+        if (await _geocoder.LookupAsync(task.Address, ct) is { } pos)
+        {
+            task.Latitude = pos.Lat;
+            task.Longitude = pos.Lon;
+        }
+    }
+
+    private static string Where(TaskDto dto) => dto.Address is null ? "" : $" — {dto.Address}";
 
     /// <summary>Attività nell'intervallo [from, to] (inclusi), ordinate per giorno e ora.</summary>
     [HttpGet]
@@ -59,13 +91,14 @@ public sealed class TasksController : ControllerBase
         if (task.LabelId is { } lid && !await _db.Labels.AnyAsync(l => l.Id == lid, ct))
             return BadRequest("Etichetta inesistente.");
 
+        await GeocodeIfChangedAsync(task, req, null, ct);
         task.CreatedByMemberId = (HttpContext.Items[TokenAuthAttribute.PrincipalKey] as AuthService.Principal)?.MemberId;
         _db.Tasks.Add(task);
         await _db.SaveChangesAsync(ct);
 
         var dto = await Load(task.Id, ct);
         _ = _push.NotifyAllAsync("Nuova attività",
-            $"{dto.CreatedBy ?? "Qualcuno"}: {dto.Title} ({When(task, dto)})", task.CreatedByMemberId);
+            $"{dto.CreatedBy ?? "Qualcuno"}: {dto.Title} ({When(task, dto)}){Where(dto)}", task.CreatedByMemberId);
         return Ok(dto);
     }
 
@@ -81,18 +114,20 @@ public sealed class TasksController : ControllerBase
         var task = await _db.Tasks.FindAsync(new object[] { id }, ct);
         if (task is null)
             return NotFound();
+        var previousAddress = task.Address;
         if (!Apply(task, req, out var error))
             return BadRequest(error);
         if (task.LabelId is { } lid && !await _db.Labels.AnyAsync(l => l.Id == lid, ct))
             return BadRequest("Etichetta inesistente.");
 
+        await GeocodeIfChangedAsync(task, req, previousAddress, ct);
         await _db.SaveChangesAsync(ct);
 
         var dto = await Load(id, ct);
         var editor = HttpContext.Items[TokenAuthAttribute.PrincipalKey] as AuthService.Principal;
         var editorName = editor is null ? "Qualcuno" : await EditorName(editor.MemberId, ct);
         _ = _push.NotifyAllAsync("Attività modificata",
-            $"{editorName}: {dto.Title} ({When(task, dto)})", editor?.MemberId);
+            $"{editorName}: {dto.Title} ({When(task, dto)}){Where(dto)}", editor?.MemberId);
         return Ok(dto);
     }
 
@@ -153,6 +188,14 @@ public sealed class TasksController : ControllerBase
             return false;
         }
 
+        var address = string.IsNullOrWhiteSpace(req.Address) ? null : req.Address.Trim();
+        if (address is { Length: > 300 })
+        {
+            error = "Indirizzo troppo lungo (max 300 caratteri).";
+            return false;
+        }
+
+        task.Address = address;
         task.Title = title;
         task.Date = date;
         task.Time = time;

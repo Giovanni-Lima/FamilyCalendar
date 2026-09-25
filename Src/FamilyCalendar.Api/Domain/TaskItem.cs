@@ -10,6 +10,11 @@ public class TaskItem
     public string? Note { get; set; }
     public bool Done { get; set; }
 
+    /// <summary>Luogo dell'attività (testo libero) e, se la geocodifica è riuscita, le sue coordinate.</summary>
+    public string? Address { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+
     public int? LabelId { get; set; }
     public Label? Label { get; set; }
 

@@ -3,7 +3,7 @@
  * Rende l'app installabile (PWA) e apribile offline nel suo guscio, SENZA mai mettere in cache
  * le risposte /api (dati + auth: passano sempre dalla rete). Strategia guscio: rete prima, cache
  * come ripiego offline. Alza CACHE_VERSION a ogni modifica al guscio. */
-const CACHE_VERSION = "v10";
+const CACHE_VERSION = "v16";
 const CACHE_NAME = `fc-shell-${CACHE_VERSION}`;
 
 const SHELL = ["/", "/index.html", "/manifest.webmanifest", "/icon-192.png", "/icon-512.png", "/icon-maskable-512.png"];

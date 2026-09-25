@@ -53,6 +53,7 @@ public class FamilyCalendarDbContext : DbContext
             e.HasKey(t => t.Id);
             e.Property(t => t.Title).IsRequired().HasMaxLength(200);
             e.Property(t => t.Note).HasMaxLength(1000);
+            e.Property(t => t.Address).HasMaxLength(300);
             e.HasIndex(t => t.Date);
             e.HasOne(t => t.Label).WithMany().HasForeignKey(t => t.LabelId).OnDelete(DeleteBehavior.SetNull);
             e.HasOne(t => t.CreatedBy).WithMany().HasForeignKey(t => t.CreatedByMemberId).OnDelete(DeleteBehavior.SetNull);

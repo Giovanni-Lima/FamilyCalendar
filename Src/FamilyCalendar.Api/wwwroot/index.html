@@ -84,6 +84,21 @@
     .card .meta{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:6px;font-size:10px;color:#4b5058}
     .card .lbl{display:flex;align-items:center;gap:5px}
     .card .by{color:var(--muted);font-style:italic;white-space:nowrap}
+    .card .where{display:flex;align-items:flex-start;gap:4px;font-size:11px;color:#4b5058;margin-top:4px;overflow-wrap:anywhere}
+    .card .where svg{flex:0 0 auto;width:12px;height:12px;margin-top:1px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+    .sugg{margin-top:8px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 6px 18px rgba(0,0,0,.08)}
+    .sugg-item{display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);
+      background:#fff;padding:10px 14px}
+    .sugg-item:last-child{border-bottom:0}
+    .sugg-item:active{background:#fff5e6}
+    .sugg-main{font-size:14px;font-weight:700;overflow-wrap:anywhere}
+    .sugg-detail{font-size:12px;color:var(--muted)}
+    .sugg-none{padding:12px 14px;font-size:13px;color:var(--muted)}
+    .map-hint{font-size:12px;color:var(--muted);margin-top:8px}
+    .map-box{margin-top:12px;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+    .map-box iframe{display:block;width:100%;height:170px;border:0}
+    .dir-btn{display:block;text-align:center;text-decoration:none;color:var(--orange-dark);font-weight:800;font-size:13px;
+      letter-spacing:.03em;text-transform:uppercase;padding:11px;border-top:1px solid var(--line);background:#fff}
     .by-line{color:var(--muted);font-size:12px;text-align:center;margin-top:-10px}
     .card .lbl i{width:6px;height:6px;border-radius:50%;display:block}
     .item.done .name,.item.done .time{text-decoration:line-through}
@@ -103,13 +118,19 @@
     .sheet.open{transform:none;visibility:visible}
     .sheet::before{content:"";position:absolute;top:-150px;left:50%;margin-left:-190px;width:380px;height:380px;border-radius:50%;
       background:#eef0f2;pointer-events:none}
+    .sheet{scrollbar-width:none;-ms-overflow-style:none}   /* scorre comunque, ma senza barra visibile */
+    .sheet::-webkit-scrollbar{display:none}
     .sheet > *{position:relative}
-    .sheet .close{position:absolute;z-index:2;top:calc(env(safe-area-inset-top) + 34px);left:14px}
+    /* "X" sempre visibile mentre il foglio scorre: wrapper sticky alto 0 (non occupa spazio) che fa da
+       ancora al pulsante. Non uso position:fixed perché su desktop l'app è una card centrata. */
+    .sheet > .close-wrap{position:sticky;top:0;height:0;z-index:5}
+    .sheet .close{position:absolute;top:calc(env(safe-area-inset-top) + 28px);left:14px;width:44px;height:44px;
+      background:#fff;box-shadow:0 4px 14px rgba(0,0,0,.2)}
     .sheet h2{margin:0;text-align:center;font-size:16px;letter-spacing:.05em;font-weight:700;
       padding:calc(env(safe-area-inset-top) + 150px) 0 34px}
     /* Il pulsante di invio sta sempre dove sta il "+" della home (centrato, a 34px dal fondo:
        il suo centro coincide con quello del FAB da 62px a 26px), anche se il form scorre. */
-    .form{flex:1 0 auto;padding:0 30px calc(env(safe-area-inset-bottom) + 34px);display:flex;flex-direction:column;gap:22px}
+    .form{flex:1 0 auto;padding:0 30px 0;display:flex;flex-direction:column;gap:22px}
     .field label{display:block;color:var(--orange);font-weight:700;font-size:12px;letter-spacing:.03em;text-transform:uppercase;margin-bottom:6px}
     .field input,.field textarea{width:100%;border:0;border-bottom:1px solid #d7dae0;border-radius:0;background:transparent;
       padding:6px 0;font-size:15px;outline:none}
@@ -124,7 +145,9 @@
     .submit{align-self:center;border:0;border-radius:999px;background:var(--orange);color:#fff;font-weight:800;letter-spacing:.05em;
       padding:14px 44px;box-shadow:var(--shadow);margin-top:6px;text-transform:uppercase}
     /* Barra azioni fissa in basso: in modifica "Salva" a sinistra e "Elimina" (danger) a destra. */
-    .actions{position:sticky;bottom:calc(env(safe-area-inset-bottom) + 34px);margin-top:auto;z-index:2;display:flex;justify-content:center;gap:12px}
+    /* Fascia bianca a tutta larghezza dietro i pulsanti: ciò che scorre (etichette, mappa...) le passa sotto senza confondersi. */
+    .actions{position:sticky;bottom:0;margin:auto -30px 0;padding:14px 30px calc(env(safe-area-inset-bottom) + 34px);background:#fff;
+      box-shadow:0 -6px 16px rgba(0,0,0,.07);z-index:2;display:flex;justify-content:center;gap:12px}
     .actions .submit{margin-top:0}
     .actions.two .submit{flex:1;padding-left:0;padding-right:0}
     .actions .del{background:var(--danger);box-shadow:0 8px 20px rgba(229,72,77,.35)}
@@ -195,7 +218,9 @@
 
     <!-- Foglio nuova / modifica attività -->
     <section class="sheet" id="sheet" aria-hidden="true">
-      <button class="icon-btn close" id="closeSheet" aria-label="Chiudi"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <div class="close-wrap">
+        <button class="icon-btn close" id="closeSheet" type="button" aria-label="Chiudi"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div>
       <h2 id="sheetTitle">NUOVA ATTIVITÀ</h2>
       <form class="form" id="form" novalidate>
         <div class="by-line" id="byLine" hidden></div>
@@ -205,6 +230,16 @@
           <div class="field"><label for="fTime">Ora</label><input id="fTime" type="time"></div>
         </div>
         <div class="field"><label for="fNote">Aggiungi nota</label><textarea id="fNote" maxlength="1000"></textarea></div>
+        <div class="field">
+          <label for="fAddr">Luogo</label>
+          <input id="fAddr" maxlength="300" placeholder="Via, numero, città" autocomplete="street-address">
+          <div class="sugg" id="sugg" hidden></div>
+          <div class="map-hint" id="mapHint" hidden>Scegli un suggerimento dall'elenco per indicare il luogo esatto sulla mappa.</div>
+          <div class="map-box" id="mapBox" hidden>
+            <iframe id="mapFrame" title="Mappa" loading="lazy" referrerpolicy="no-referrer"></iframe>
+            <a class="dir-btn" id="dirBtn" target="_blank" rel="noopener">Indicazioni</a>
+          </div>
+        </div>
         <div class="field"><label>Etichetta</label><div class="chips" id="chips"></div></div>
         <div class="form-err" id="formErr" hidden></div>
         <div class="actions" id="actions">
@@ -306,7 +341,8 @@
       const n = parseInt(hex.slice(1), 16);
       return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`;
     };
-    const CHECK = '<svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg>';
+    const PIN = '<svg viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
+    const CHECK ='<svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg>';
 
     // --- rendering -----------------------------------------------------------
     function renderHeader() {
@@ -344,6 +380,10 @@
           style: col ? `background:${tint(col, .16)};border-color:${tint(col, .35)}` : "" },
           h("div", { class: "row" }, h("span", { class: "name" }, t.title), h("span", { class: "time" }, t.time || "")));
         if (t.note) card.append(h("div", { class: "note" }, t.note));
+        if (t.address) {
+          const pin = h("span"); pin.innerHTML = PIN;
+          card.append(h("div", { class: "where" }, pin.firstChild, h("span", {}, t.address)));
+        }
         if (t.labelName || t.createdBy) card.append(h("div", { class: "meta" },
           h("span", { class: "lbl" }, t.labelName ? h("i", { style: `background:${col}` }) : null, t.labelName || ""),
           t.createdBy ? h("span", { class: "by" }, t.createdBy) : null));
@@ -386,7 +426,61 @@
       }
     }
 
+    // --- luogo: suggerimenti (Photon/OpenStreetMap via /api/places) + mappa ----------
+    // `place` = luogo scelto dai suggerimenti (o già salvato con coordinate). Vale finché il testo
+    // del campo resta identico a place.address: appena l'utente lo modifica, va riscelto.
+    let place = null, suggTimer = null, suggSeq = 0;
+
+    function updateMap() {
+      const addr = $("fAddr").value.trim();
+      const ok = !!(place && addr && addr === place.address);
+      $("mapBox").hidden = !ok;
+      $("mapHint").hidden = ok || !addr;
+      if (!ok) return;
+      const f = $("mapFrame"), { lat: la, lon: lo } = place, key = `${la},${lo}`;
+      if (f.dataset.key !== key) {
+        f.dataset.key = key;
+        f.src = `https://www.openstreetmap.org/export/embed.html?bbox=${lo - 0.006},${la - 0.004},${lo + 0.006},${la + 0.004}&layer=mapnik&marker=${la},${lo}`;
+      }
+      $("dirBtn").href = `https://www.google.com/maps/dir/?api=1&destination=${la},${lo}`;
+    }
+
+    function hideSugg() { suggSeq++; $("sugg").hidden = true; }
+
+    function renderSugg(list) {
+      const box = $("sugg"); box.replaceChildren();
+      if (!list.length) box.append(h("div", { class: "sugg-none" }, "Nessun risultato: prova ad aggiungere la città."));
+      for (const s of list) {
+        box.append(h("button", { class: "sugg-item", type: "button",
+            onmousedown: e => e.preventDefault(),   // il click non deve far perdere il focus prima della scelta
+            onclick: () => {
+              place = { address: s.label, lat: s.lat, lon: s.lon };
+              $("fAddr").value = s.label; hideSugg(); updateMap();
+            } },
+          h("span", { class: "sugg-main" }, s.label.split(",")[0]),
+          h("span", { class: "sugg-detail" }, s.detail)));
+      }
+      box.hidden = false;
+    }
+
+    function scheduleSuggest() {
+      clearTimeout(suggTimer);
+      const q = $("fAddr").value.trim();
+      if (q.length < 3 || (place && q === place.address)) { hideSugg(); return; }
+      suggTimer = setTimeout(async () => {
+        const seq = ++suggSeq;
+        try {
+          const list = await api(`/api/places?q=${encodeURIComponent(q)}`);
+          if (seq === suggSeq) renderSugg(list);
+        } catch (_) { /* senza suggerimenti si può comunque salvare il testo */ }
+      }, 350);
+    }
+
+    $("fAddr").addEventListener("input", () => { updateMap(); scheduleSuggest(); });
+    $("fAddr").addEventListener("blur", () => setTimeout(hideSugg, 150));
+
     function openSheet(t) {
+      $("sheet").scrollTop = 0;   // si atterra sempre in cima, anche se l'ultima volta era stato scrollato
       editing = t || null;
       $("sheetTitle").textContent = t ? "MODIFICA ATTIVITÀ" : "NUOVA ATTIVITÀ";
       $("submitBtn").textContent = t ? "Salva" : "Crea attività";
@@ -398,6 +492,10 @@
       $("fDate").value = t ? t.date : selected;
       $("fTime").value = t?.time || "";
       $("fNote").value = t?.note || "";
+      $("fAddr").value = t?.address || "";
+      place = t && t.address && t.latitude != null ? { address: t.address, lat: t.latitude, lon: t.longitude } : null;
+      hideSugg();
+      updateMap();
       formLabel = t ? t.labelId : null;
       $("formErr").hidden = true;
       renderChips();
@@ -414,7 +512,8 @@
       const err = $("formErr"), btn = $("submitBtn");
       err.hidden = true;
       const body = { title: $("fTitle").value.trim(), date: $("fDate").value, time: $("fTime").value || null,
-                     note: $("fNote").value.trim() || null, labelId: formLabel };
+                     note: $("fNote").value.trim() || null, labelId: formLabel, address: $("fAddr").value.trim() || null };
+      if (place && body.address === place.address) { body.latitude = place.lat; body.longitude = place.lon; }
       if (!body.title) { err.textContent = "Inserisci il nome dell'attività."; err.hidden = false; return; }
       if (!body.date) { err.textContent = "Scegli una data."; err.hidden = false; return; }
       btn.disabled = true;
