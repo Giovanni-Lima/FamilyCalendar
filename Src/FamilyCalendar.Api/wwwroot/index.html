@@ -144,7 +144,7 @@
     .form-err{color:var(--danger);font-size:13px;text-align:center}
     .submit{align-self:center;border:0;border-radius:999px;background:var(--orange);color:#fff;font-weight:800;letter-spacing:.05em;
       padding:14px 44px;box-shadow:var(--shadow);margin-top:6px;text-transform:uppercase}
-    /* Barra azioni fissa in basso: in modifica "Salva" a sinistra e "Elimina" (danger) a destra. */
+    /* Barra azioni fissa in basso: in modifica "Salva" a sinistra, "Aggiungi a Google Calendar" (tondo) al centro e "Elimina" (danger) a destra. */
     /* Fascia bianca a tutta larghezza dietro i pulsanti: ciò che scorre (etichette, mappa...) le passa sotto senza confondersi. */
     .actions{position:sticky;bottom:0;margin:auto -30px 0;padding:14px 30px calc(env(safe-area-inset-bottom) + 34px);background:#fff;
       box-shadow:0 -6px 16px rgba(0,0,0,.07);z-index:2;display:flex;justify-content:center;gap:12px}
@@ -152,6 +152,9 @@
     .actions.two .submit{flex:1;padding-left:0;padding-right:0}
     .actions .del{background:var(--danger);box-shadow:0 8px 20px rgba(229,72,77,.35)}
     .submit:disabled{opacity:.55}
+    .gcal-btn{flex:0 0 auto;align-self:center;width:50px;height:50px;border-radius:50%;border:2px solid var(--orange);background:#fff;
+      color:var(--orange-dark);display:grid;place-items:center;padding:0;box-shadow:var(--shadow)}
+    .gcal-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
     /* Campanella + logout: fissi in alto a destra, indipendenti dal padding di .top */
     .top-actions{position:absolute;z-index:3;top:calc(env(safe-area-inset-top) + 34px);right:14px;display:flex;gap:2px}
@@ -244,6 +247,9 @@
         <div class="form-err" id="formErr" hidden></div>
         <div class="actions" id="actions">
           <button class="submit" id="submitBtn" type="submit">Crea attività</button>
+          <button class="gcal-btn" id="gcalBtn" type="button" aria-label="Aggiungi a Google Calendar" title="Aggiungi a Google Calendar" hidden>
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M12 13v5M9.5 15.5h5"/></svg>
+          </button>
           <button class="submit del" id="delBtn" type="button" hidden>Elimina</button>
         </div>
       </form>
@@ -485,6 +491,7 @@
       $("sheetTitle").textContent = t ? "MODIFICA ATTIVITÀ" : "NUOVA ATTIVITÀ";
       $("submitBtn").textContent = t ? "Salva" : "Crea attività";
       $("delBtn").hidden = !t;
+      $("gcalBtn").hidden = !t;
       $("actions").classList.toggle("two", !!t);
       $("byLine").hidden = !t?.createdBy;
       $("byLine").textContent = t?.createdBy ? `Creata da ${t.createdBy}` : "";
@@ -527,6 +534,28 @@
       } catch (ex) {
         if (ex.message !== "401") { err.textContent = ex.message; err.hidden = false; }
       } finally { btn.disabled = false; }
+    };
+
+    // --- aggiungi a Google Calendar: link "TEMPLATE" che apre il nuovo evento già compilato ---
+    // Usa i valori attuali del form. Con l'ora: evento di 1 ora che termina all'ora dell'attività;
+    // senza ora: evento "tutto il giorno" (la data di fine è esclusa, quindi giorno dopo).
+    $("gcalBtn").onclick = () => {
+      const title = $("fTitle").value.trim(), date = $("fDate").value, time = $("fTime").value;
+      if (!title || !date) { toast("Inserisci nome e data dell'attività."); return; }
+      const ymd = s => s.replaceAll("-", "");
+      let dates;
+      if (time) {
+        const end = parse(date); const [hh, mm] = time.split(":").map(Number); end.setHours(hh, mm, 0, 0);
+        const start = new Date(end.getTime() - 3600000);
+        const stamp = d => `${ymd(fmt(d))}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+        dates = `${stamp(start)}/${stamp(end)}`;
+      } else dates = `${ymd(date)}/${ymd(addDays(date, 1))}`;
+      const q = new URLSearchParams({ action: "TEMPLATE", text: title, dates,
+                                      ctz: Intl.DateTimeFormat().resolvedOptions().timeZone });
+      const note = $("fNote").value.trim(), addr = $("fAddr").value.trim();
+      if (note) q.set("details", note);
+      if (addr) q.set("location", addr);
+      window.open(`https://calendar.google.com/calendar/render?${q}`, "_blank", "noopener");
     };
 
     $("delBtn").onclick = async () => {
