@@ -1,6 +1,7 @@
 using FamilyCalendar.Data;
 using FamilyCalendar.Domain;
 using FamilyCalendar.Services;
+using FamilyCalendar.Services.Assistant;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 
@@ -35,6 +36,8 @@ builder.Services.AddHttpClient<Geocoder>(c =>
     c.DefaultRequestHeaders.UserAgent.ParseAdd("FamilyCalendar/1.0 (giovannilima800@gmail.com)");
     c.DefaultRequestHeaders.AcceptLanguage.ParseAdd("it");
 });
+builder.Services.AddScoped<ITaskVectorStore, TaskVectorStore>();
+builder.Services.AddAssistant(builder.Configuration); // assistente Aesir (RAG): client Gemini/Groq, limiter, indicizzazione
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

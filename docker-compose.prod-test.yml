@@ -1,0 +1,39 @@
+# Override per provare l'app LOCALE (build del codice corrente) contro il MySQL di PRODUZIONE esterno (Aiven).
+# Avvia SOLO il servizio app, in un progetto compose separato: non tocca il DB locale ne' l'app locale sulla 8080.
+#
+# Uso (dalla radice del repo; .env.prod contiene PROD_CONNECTION e le altre variabili, non va committato):
+#   docker compose -p familycalendar-prodtest -f docker-compose.yml -f docker-compose.prod-test.yml --env-file .env.prod up --build -d --no-deps app
+#   -> app su http://localhost:8081
+# Spegnimento (SENZA -v; il DB e' comunque esterno e non e' toccato dallo spegnimento):
+#   docker compose -p familycalendar-prodtest -f docker-compose.yml -f docker-compose.prod-test.yml --env-file .env.prod down
+#
+# AVVERTENZE (si lavora su dati REALI):
+#  - Al primo avvio Database.Migrate() applica alla PRODUZIONE la migration AddTaskEmbeddings (nuova tabella TaskEmbeddings).
+#  - Il backfill degli embedding SCRIVE nella tabella TaskEmbeddings e INVIA testi reali delle attivita' a Gemini
+#    (se GEMINI_API_KEY e' impostata; senza chiave l'indicizzazione e' disattivata).
+#  - Durante il test NON creare ne' modificare attivita' (ogni modifica toccherebbe i dati reali e reindicizzerebbe).
+#  - Notifiche push disattivate (chiavi VAPID vuote) e seed dei membri disattivato (FAMILYCALENDAR_MEMBERS vuoto).
+#  - Variabili richieste in .env.prod: PROD_CONNECTION, FAMILYCALENDAR_AUTH_PASSWORD; opzionali: GEMINI_API_KEY,
+#    GROQ_API_KEY, FAMILYCALENDAR_AUTH_SECRET, FAMILYCALENDAR_AUTH_PASSWORD_ADMIN (se vuota, il login admin e' disattivato).
+
+services:
+  app:
+    container_name: familycalendar-prodtest-app
+    restart: "no"
+    # Nessuna dipendenza dal servizio db locale (con -f multipli le mappe si fondono: serve il reset esplicito).
+    depends_on: !reset {}
+    # Sostituisce (non accoda) le porte del file base: 8081 sull'host -> 8080 nel container.
+    ports: !override
+      - "8081:8080"
+    environment:
+      FAMILYCALENDAR_CONNECTION: "${PROD_CONNECTION:?serve PROD_CONNECTION in .env.prod}"
+      FAMILYCALENDAR_AUTH_PASSWORD: "${FAMILYCALENDAR_AUTH_PASSWORD:?imposta FAMILYCALENDAR_AUTH_PASSWORD in .env.prod: senza il login e' disattivato}"
+      FAMILYCALENDAR_AUTH_PASSWORD_ADMIN: ${FAMILYCALENDAR_AUTH_PASSWORD_ADMIN:-}
+      FAMILYCALENDAR_AUTH_SECRET: ${FAMILYCALENDAR_AUTH_SECRET:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      # Push disattivato: con chiavi vuote PushSender.Enabled e' false e NotifyAllAsync esce subito.
+      FAMILYCALENDAR_VAPID_PUBLIC: ""
+      FAMILYCALENDAR_VAPID_PRIVATE: ""
+      # Nessun seed dei membri (in ogni caso il seed gira solo a tabella Members vuota).
+      FAMILYCALENDAR_MEMBERS: ""

@@ -20,6 +20,8 @@
       --orange:#ff9a1f; --orange-dark:#f08400; --peach:#fde9cc; --page:#fdc98a;
       --ink:#16181d; --muted:#8a8f98; --line:#e6e8ec; --surface:#fff; --yellow:#f2c500; --danger:#e5484d;
       --shadow:0 8px 20px rgba(255,154,31,.38);
+      --ink-soft:#4b5058;    /* testo secondario su bianco/peach: 8,1:1 */
+      --orange-ink:#b35c00;  /* arancione per testo e contorni su bianco: 4,7:1 (--orange sul bianco e' 2,1:1) */
     }
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
     html,body{height:100%;margin:0}
@@ -31,7 +33,7 @@
     [hidden]{display:none!important}
 
     /* Sul telefono l'app occupa tutto lo schermo; su desktop è una "card" centrata. */
-    .app{position:relative;width:100%;max-width:430px;height:100%;background:var(--surface);overflow:hidden;
+    .app{position:relative;width:100%;max-width:430px;height:100%;background:var(--surface);overflow:hidden;overflow:clip;   /* clip: niente area scrollabile, nemmeno via focus()/scrollIntoView (hidden resta come ripiego) */
       display:flex;flex-direction:column}
     @media (min-width:600px){
       body{padding:24px 0}
@@ -157,7 +159,9 @@
     .gcal-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
     /* Campanella + logout: fissi in alto a destra, indipendenti dal padding di .top */
-    .top-actions{position:absolute;z-index:3;top:calc(env(safe-area-inset-top) + 34px);right:14px;display:flex;gap:2px}
+    .top-actions{position:absolute;z-index:3;top:calc(env(safe-area-inset-top) + 34px);right:14px;display:flex;gap:4px}
+    .top-actions .icon-btn{width:44px;height:44px}   /* target da 44px anche per campanella e logout */
+    .ae-open{background:var(--peach)}
 
     /* --- calendario mensile (si apre dal click sulla data) ---------------------- */
     .date-line,.today{cursor:pointer}
@@ -185,10 +189,136 @@
     .login-box h1 span{color:var(--orange)}
     .login-box p{margin:0 0 6px;text-align:center;color:var(--muted);font-size:13.5px}
     .login-err{color:var(--danger);font-size:13px;text-align:center}
+    .pw-wrap{position:relative}
+    .pw-wrap input{padding-right:36px}
+    .pw-toggle{position:absolute;right:0;top:50%;transform:translateY(-50%);width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+      border:0;background:transparent;color:var(--muted);border-radius:50%;cursor:pointer}
+    .pw-toggle:hover,.pw-toggle[aria-pressed="true"]{color:var(--orange)}
+    .pw-toggle svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+    .pw-toggle .eye-off{display:none}
+    .pw-toggle[aria-pressed="true"] .eye{display:none}
+    .pw-toggle[aria-pressed="true"] .eye-off{display:block}
 
     .toast{position:absolute;z-index:60;left:50%;bottom:110px;transform:translate(-50%,20px);background:var(--orange);color:#fff;font-weight:700;box-shadow:var(--shadow);
       font-size:13px;padding:9px 16px;border-radius:999px;opacity:0;pointer-events:none;transition:.25s;max-width:85%;text-align:center}
     .toast.show{opacity:1;transform:translate(-50%,0)}
+
+    /* --- Æsir: assistente del calendario (overlay a tutto schermo, sotto lo sheet) ---------- */
+    .sr-only{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+    .aesir{position:absolute;inset:0 0 var(--kb,0px);z-index:18;background:var(--surface);display:flex;flex-direction:column;
+      overflow:hidden;overflow:clip;transform:translateY(100%);visibility:hidden;transition:transform .25s ease,visibility 0s .25s}
+    .aesir.open{transform:none;visibility:visible;transition:transform .25s ease}
+    .aesir::before{content:"";position:absolute;top:-170px;right:-140px;width:360px;height:360px;border-radius:50%;
+      background:#eef0f2;pointer-events:none}
+    .aesir > *{position:relative}
+
+    .ae-head{display:flex;align-items:center;gap:12px;padding:calc(env(safe-area-inset-top) + 14px) 16px 12px}
+    .ae-head .close{width:44px;height:44px;background:#fff;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+    .ae-title{margin:0;font-size:16px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+    .ae-sub{margin:1px 0 0;font-size:12px;color:var(--ink-soft)}
+
+    .ae-conv{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+      padding:8px 20px 20px;display:flex;flex-direction:column;gap:12px}
+    .ae-live:empty,#aeExtra:empty{display:none}
+
+    /* Fascia bianca come .actions dello sheet */
+    .ae-compose{display:flex;align-items:flex-end;gap:10px;background:#fff;box-shadow:0 -6px 16px rgba(0,0,0,.07);
+      padding:10px 16px calc(env(safe-area-inset-bottom) + 14px)}
+    .aesir.kb .ae-compose{padding-bottom:10px}
+    .ae-input{flex:1;min-width:0}
+    .ae-input textarea{display:block;width:100%;min-height:48px;max-height:132px;resize:none;border:1px solid var(--line);
+      border-radius:14px;background:#fff;padding:12px 14px;font-size:16px;line-height:1.4;outline:none}   /* 16px: niente zoom su iOS */
+    .ae-input textarea::placeholder{color:var(--muted)}
+    .ae-input textarea:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,154,31,.25)}
+    .ae-count{display:block;text-align:right;font-size:11px;color:var(--ink-soft);margin-top:3px}
+    .ae-count.max{color:var(--ink);font-weight:700}
+
+    .ae-send{flex:0 0 auto;width:48px;height:48px;border-radius:50%;border:0;background:var(--orange);color:var(--ink);
+      display:grid;place-items:center;padding:0;box-shadow:var(--shadow)}
+    .ae-send svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+    .ae-send:disabled,.ae-send[aria-disabled="true"]{opacity:.55;box-shadow:none}
+    .ae-send:active:not(:disabled){transform:scale(.95)}
+
+    .aesir :focus-visible{outline:3px solid var(--orange-ink);outline-offset:2px}
+    .ae-title:focus,.ae-conv:focus{outline:none}           /* focus programmatico, non da tastiera */
+
+    /* stato vuoto */
+    .ae-empty{margin:auto 0;display:flex;flex-direction:column;gap:18px;text-align:center;padding:12px 0}
+    .ae-hello h3{margin:0;font-size:20px;font-weight:800}
+    .ae-hello p{margin:6px auto 0;max-width:300px;color:var(--ink-soft);font-size:13.5px;line-height:1.5}
+    .aesir.kb .ae-hello p{display:none}
+    .chip.ask{flex:0 1 auto;min-height:44px;padding:10px 16px;font-size:14px;text-align:center;color:var(--ink)}
+    .chip.ask:active{background:#fff5e6;border-color:var(--orange)}
+
+    /* volto: quadratino arancione con due occhi, decorativo (lo stato vero lo dice il testo) */
+    .ae-face{flex:0 0 auto;width:44px;height:44px;border-radius:14px;background:var(--orange);box-shadow:var(--shadow);
+      display:flex;align-items:center;justify-content:center;gap:7px}
+    .ae-eye{width:7px;height:11px;border-radius:4px;background:#fff;animation:ae-blink 5.6s infinite;
+      transition:height .3s,transform .3s,border-radius .3s}
+    .ae-face[data-mood="thinking"] .ae-eye{height:7px;animation:ae-scan 1.6s ease-in-out infinite}
+    .ae-face[data-mood="done"] .ae-eye{animation:none;height:6px;background:transparent;border:2.5px solid #fff;border-bottom:0;
+      border-radius:6px 6px 0 0}
+    .ae-face[data-mood="error"] .ae-eye{animation:none;height:5px}
+    .ae-face[data-mood="error"] .ae-eye:first-child{transform:rotate(-14deg)}
+    .ae-face[data-mood="error"] .ae-eye:last-child{transform:rotate(14deg)}
+    @keyframes ae-blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+    @keyframes ae-scan{0%,100%{transform:translateX(-3px)}50%{transform:translateX(3px)}}
+
+    .ae-q{align-self:flex-end;max-width:85%;margin:0;background:var(--peach);border-radius:14px 14px 4px 14px;
+      padding:9px 13px;font-size:14.5px;line-height:1.45;overflow-wrap:anywhere;white-space:pre-wrap}
+    .ae-status{color:var(--ink-soft);font-size:14px}
+    .ae-dots i{display:inline-block;width:5px;height:5px;margin-left:4px;border-radius:50%;background:var(--orange-ink);
+      animation:ae-dot 1s ease-in-out infinite}
+    .ae-dots i:nth-child(2){animation-delay:.15s}.ae-dots i:nth-child(3){animation-delay:.3s}
+    @keyframes ae-dot{0%,80%,100%{opacity:.25}40%{opacity:1}}
+
+    /* errori */
+    .ae-err{background:rgba(229,72,77,.08);border:1px solid rgba(229,72,77,.4);border-radius:14px;padding:12px 14px;
+      font-size:14px;line-height:1.5}
+    .ae-err small{display:block;margin-top:4px;font-size:11.5px;color:var(--ink-soft)}
+    .ae-act{margin-top:10px;min-height:44px;padding:0 22px;border:2px solid var(--orange);border-radius:999px;background:#fff;
+      color:var(--orange-ink);font-weight:800;font-size:13px;letter-spacing:.05em;text-transform:uppercase}
+    .ae-act:disabled{opacity:.55}
+
+    /* risposta */
+    .ae-answer{border:1px solid var(--line);border-radius:14px;background:#fff;padding:14px 16px;font-size:15px;line-height:1.55;
+      overflow-wrap:anywhere}
+    .ae-answer p{margin:0 0 10px}.ae-answer > :last-child{margin-bottom:0}
+    .ae-answer ul,.ae-answer ol{margin:0 0 10px;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+    .ae-answer li::marker{color:var(--orange-ink);font-weight:700}
+
+    .ae-cite{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;
+      padding:0 6px;margin:0 2px;border:1px solid var(--orange);border-radius:999px;background:#fff5e6;color:var(--ink);
+      font-size:12px;font-weight:800;line-height:1;vertical-align:2px}
+    .ae-cite::after{content:"";position:absolute;inset:-6px -3px}   /* area di tocco ~34px senza alterare la riga */
+
+    .ae-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:12px;color:var(--ink-soft)}
+    .ae-pill{background:var(--peach);color:var(--ink-soft);border-radius:999px;padding:3px 9px;font-weight:700;font-size:11.5px}
+
+    /* fonti */
+    .ae-src{border-top:1px solid var(--line);padding-top:4px}
+    .ae-src summary{list-style:none;min-height:44px;display:flex;align-items:center;gap:8px;cursor:pointer;
+      color:var(--orange-ink);font-weight:800;font-size:12px;letter-spacing:.03em;text-transform:uppercase}
+    .ae-src summary::-webkit-details-marker{display:none}
+    .ae-src summary::after{content:"";width:7px;height:7px;border:solid currentColor;border-width:0 2px 2px 0;
+      transform:rotate(45deg);margin-top:-3px;transition:transform .2s}
+    .ae-src[open] summary::after{transform:rotate(-135deg);margin-top:3px}
+    .ae-src ol{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+    .ae-src-item{display:flex;gap:10px;align-items:flex-start;min-height:44px}
+    .ae-src-item .ae-cite{flex:0 0 auto;margin:1px 0 0;vertical-align:0}
+    .ae-src-item .ae-cite::after{display:none}
+    .ae-src-body{flex:1;min-width:0;display:block}
+    .ae-src-body .row,.ae-src-body .where{display:flex}
+    .ae-src-date{display:block;font-size:12px;color:var(--ink-soft);margin-top:2px}
+    .ae-src-item[aria-busy="true"]{opacity:.6}
+
+    @media (prefers-reduced-motion:reduce){
+      .aesir,.aesir.open{transition:none}
+      .ae-eye,.ae-dots i{animation:none!important;transition:none!important}
+      .ae-dots i{opacity:.6}
+      .ae-src summary::after{transition:none}
+    }
   </style>
 </head>
 <body>
@@ -200,6 +330,10 @@
       </div>
     </header>
     <div class="top-actions">
+      <button class="icon-btn ae-open" id="aesirBtn" type="button" aria-haspopup="dialog"
+              aria-label="Chiedi ad Æsir, l'assistente del calendario" title="Æsir" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.6 5.6 1.9-5.6 1.9L12 18l-1.9-5.6-5.6-1.9 5.6-1.9z"/><path d="M19 3v4M17 5h4M5 17v4M3 19h4"/></svg>
+      </button>
       <button class="icon-btn" id="bellBtn" aria-label="Attiva le notifiche" title="Notifiche" hidden>
         <svg id="bellOn" viewBox="0 0 24 24" hidden><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
         <svg id="bellOff" viewBox="0 0 24 24"><path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="m2 2 20 20"/></svg>
@@ -255,6 +389,50 @@
       </form>
     </section>
 
+    <!-- Æsir: assistente del calendario (z-index 18: sotto lo sheet, così una fonte apre il dettaglio sopra la risposta) -->
+    <section class="aesir" id="aesir" role="dialog" aria-modal="true" aria-labelledby="aeTitle">
+      <header class="ae-head">
+        <button class="icon-btn close" id="aeClose" type="button" aria-label="Chiudi e torna al calendario">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+        <div class="ae-face" id="aeFace" data-mood="idle" aria-hidden="true"><span class="ae-eye"></span><span class="ae-eye"></span></div>
+        <div class="ae-titles">
+          <h2 class="ae-title" id="aeTitle" tabindex="-1">Æsir</h2>
+          <p class="ae-sub">Assistente del calendario</p>
+        </div>
+      </header>
+
+      <div class="ae-conv" id="aeConv" tabindex="-1">
+        <div class="ae-empty" id="aeEmpty">
+          <div class="ae-hello">
+            <h3>Ciao, sono Æsir</h3>
+            <p>Chiedimi degli eventi in calendario: cerco tra le attività e ti indico le fonti.</p>
+          </div>
+          <div class="chips ae-sugg" role="group" aria-label="Domande suggerite">
+            <button class="chip ask" type="button">Quali sono i prossimi eventi?</button>
+            <button class="chip ask" type="button">Cosa c'è questo fine settimana?</button>
+            <button class="chip ask" type="button">Che attività ho questa settimana?</button>
+            <button class="chip ask" type="button">Cosa c'è in programma domani?</button>
+          </div>
+        </div>
+        <p class="ae-q" id="aeQEcho" hidden></p>
+        <div class="ae-live" id="aeLive" aria-live="polite"></div>
+        <div id="aeExtra"></div>
+      </div>
+
+      <form class="ae-compose" id="aeForm" novalidate>
+        <div class="ae-input">
+          <label for="aeQ" class="sr-only">Domanda per Æsir</label>
+          <textarea id="aeQ" rows="1" maxlength="500" enterkeyhint="send" autocomplete="off"
+                    placeholder="Chiedi qualcosa sul calendario…" aria-describedby="aeCount"></textarea>
+          <span class="ae-count" id="aeCount" hidden></span>
+        </div>
+        <button class="ae-send" id="aeSend" type="submit" aria-label="Invia domanda" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        </button>
+      </form>
+    </section>
+
     <!-- Login (identico nel funzionamento a ComitatoFeste: utente iniziale.cognome + password) -->
     <section class="login" id="login" hidden>
       <form class="login-box" id="loginForm">
@@ -262,7 +440,15 @@
         <h1>Famil<span>y</span>Calendar</h1>
         <p>Accesso riservato alla famiglia.</p>
         <div class="field"><label for="lgUser">Utente</label><input id="lgUser" autocomplete="username" placeholder="es. g.lima" autocapitalize="none" spellcheck="false"></div>
-        <div class="field"><label for="lgPass">Password</label><input id="lgPass" type="password" autocomplete="current-password"></div>
+        <div class="field"><label for="lgPass">Password</label>
+          <div class="pw-wrap">
+            <input id="lgPass" type="password" autocomplete="current-password">
+            <button class="pw-toggle" id="lgToggle" type="button" aria-label="Mostra password" aria-pressed="false">
+              <svg class="eye" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="eye-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.94 17.94A10.9 10.9 0 0 1 12 19C5 19 1 12 1 12a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A10.9 10.9 0 0 1 12 5c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19M14.12 14.12A3 3 0 1 1 9.88 9.88M1 1l22 22"/></svg>
+            </button>
+          </div>
+        </div>
         <div class="login-err" id="lgErr" hidden></div>
         <button class="submit" id="lgBtn" type="submit">Entra</button>
       </form>
@@ -305,6 +491,7 @@
     const cache = new Map();          // lunedì della settimana -> attività
     let editing = null;               // attività in modifica (null = nuova)
     let formLabel = null;
+    let sheetReturn = null;           // pulsante (badge/fonte di Æsir) a cui restituire il focus alla chiusura dello sheet
 
     let token = null, user = null;
     try { token = localStorage.getItem("fc_token"); user = JSON.parse(localStorage.getItem("fc_user") || "null"); } catch (_) {}
@@ -507,9 +694,17 @@
       $("formErr").hidden = true;
       renderChips();
       $("sheet").classList.add("open"); $("sheet").setAttribute("aria-hidden", "false");
-      if (!t) setTimeout(() => $("fTitle").focus(), 260);
+      if (!t) setTimeout(() => $("fTitle").focus({ preventScroll: true }), 260);
     }
-    function closeSheet() { $("sheet").classList.remove("open"); $("sheet").setAttribute("aria-hidden", "true"); document.activeElement?.blur(); }
+    function closeSheet() {
+      $("sheet").classList.remove("open"); $("sheet").setAttribute("aria-hidden", "true");
+      // Aperto da una fonte di Æsir: il focus torna al badge/fonte che l'ha aperto.
+      if (sheetReturn) {
+        $("aesir").inert = false;   // era inert mentre lo sheet stava sopra
+        if ($("aesir").classList.contains("open")) sheetReturn.focus({ preventScroll: true });
+      } else document.activeElement?.blur();
+      sheetReturn = null;
+    }
 
     $("fab").onclick = () => openSheet(null);
     $("closeSheet").onclick = closeSheet;
@@ -621,9 +816,359 @@
     $("calClose").onclick = closeCal;
     $("cal").onclick = e => { if (e.target === $("cal")) closeCal(); };
 
+    // --- Æsir: assistente del calendario (POST /api/assistant/ask) --------------------
+    // Funzioni pure (nessun accesso a stato o rete): testabili isolatamente con uno script Node.
+    /* AESIR-PURE-START */
+    const AE_MAX = 500;
+    const AE_TIMEOUT_MS = 60000;
+    const CITE = /\[(\d{1,3}(?:\s*,\s*\d{1,3})*)\]/g;      // [1]  [1, 2]  ([1][2] = due corrispondenze)
+    const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+    const cap1 = s => s.charAt(0).toUpperCase() + s.slice(1);
+    const asStr = v => typeof v === "string" ? v : "";
+
+    // "Oggi" / "Domani" / "Venerdì 20 novembre" (anno solo se diverso da quello corrente)
+    function fmtSrcDate(ds, now = new Date()) {
+      if (!DATE_RE.test(String(ds))) return "";
+      const today = fmt(now);
+      if (ds === today) return "Oggi";
+      if (ds === addDays(today, 1)) return "Domani";
+      const d = parse(ds);
+      return `${cap1(WD_LONG[d.getDay()])} ${d.getDate()} ${MONTHS[d.getMonth()]}${d.getFullYear() !== now.getFullYear() ? " " + d.getFullYear() : ""}`;
+    }
+
+    // Retry-After: secondi (intero) oppure data HTTP. Restituisce secondi (>= 1) o null se assente/illeggibile.
+    function parseRetryAfter(v, now = Date.now()) {
+      if (v == null || String(v).trim() === "") return null;
+      let sec = Number(v);
+      if (!Number.isFinite(sec)) sec = (Date.parse(String(v)) - now) / 1000;
+      if (!Number.isFinite(sec)) return null;
+      return Math.max(1, Math.ceil(sec));
+    }
+    function fmtWait(sec) {
+      if (sec < 60) return `${sec} ${sec === 1 ? "secondo" : "secondi"}`;
+      const m = Math.ceil(sec / 60);
+      return `${m} ${m === 1 ? "minuto" : "minuti"}`;
+    }
+
+    // Tabella errori della specifica. o = { kind: "offline"|"timeout" } oppure { kind: "http", status, message, retryAfter }.
+    // Il `message` del server si mostra solo per il 400; altrove serve a distinguere i casi del 503.
+    function aeError(o, now = Date.now()) {
+      const E = (text, extra) => ({ text, small: "", retry: true, waitMs: 0, ...extra });
+      if (o.kind === "offline") return E("Sei offline o il server non risponde. Controlla la connessione e riprova.");
+      if (o.kind === "timeout") return E("La risposta sta impiegando troppo. Riprova tra poco.");
+      const st = o.status, msg = asStr(o.message).trim();
+      if (st === 400) return E(msg || "Domanda non valida: scrivi una domanda di al massimo 500 caratteri.", { retry: false });
+      if (st === 429) {
+        const sec = parseRetryAfter(o.retryAfter, now);
+        if (sec == null) return E("Hai fatto molte domande di fila. Riprova tra qualche minuto.");
+        return E(`Hai raggiunto il limite di domande. Riprova tra ${fmtWait(sec)}.`, { waitMs: sec <= 600 ? sec * 1000 : 0 });
+      }
+      if (st === 503) {
+        if (/configurat/i.test(msg)) return E("Æsir non è ancora configurato su questo server. Chiedi a chi gestisce l'app di attivarlo.", { retry: false });
+        if (!msg) return E("Æsir non è disponibile al momento. Riprova più tardi.");
+        // 503 "transitori" del backend (occupato / modelli saturi / troppo lento): testo adatto e, se c'e' Retry-After,
+        // stessa attesa del 429 (Riprova bloccato fino alla scadenza). Il message serve solo a distinguere i casi.
+        const sec = parseRetryAfter(o.retryAfter, now), wait = sec == null ? {} : { waitMs: sec <= 600 ? sec * 1000 : 0 };
+        const when = (dflt) => sec == null ? dflt : `tra ${fmtWait(sec)}`;
+        if (/satur|quota/i.test(msg)) return E(`I modelli di Æsir sono momentaneamente saturi. Riprova ${when("tra qualche minuto")}.`, wait);
+        if (/troppo tempo/i.test(msg)) return E(`Æsir sta impiegando troppo a rispondere. Riprova ${when("tra poco")}.`, wait);
+        if (/occupat/i.test(msg)) return E(`Æsir è occupato con altre domande. Riprova ${when("tra qualche secondo")}.`, wait);
+        return E(`Æsir è molto richiesto in questo momento. Riprova ${when("tra qualche secondo")}.`, wait);
+      }
+      return E("Non sono riuscito a preparare una risposta. Riprova tra poco.", { small: `Codice ${st}` });
+    }
+
+    // Normalizza il 200: answer obbligatoria (altrimenti null -> errore generico 502), sources opzionale.
+    function aeParseResult(raw) {
+      if (!raw || typeof raw.answer !== "string" || !raw.answer.trim()) return null;
+      const byRef = new Map();
+      for (const s of Array.isArray(raw.sources) ? raw.sources : []) {
+        if (!s || !Number.isInteger(s.ref) || byRef.has(s.ref) || !DATE_RE.test(String(s.date))) continue;
+        byRef.set(s.ref, { ref: s.ref, id: s.id, date: s.date, time: asStr(s.time), title: asStr(s.title), place: asStr(s.place) });
+      }
+      return { answer: raw.answer.trim(), sources: [...byRef.values()].sort((a, b) => a.ref - b.ref),
+               reducedModel: raw.reducedModel === true, model: asStr(raw.model),
+               retrieved: Number.isFinite(raw.retrieved) ? raw.retrieved : null };
+    }
+
+    // Testo -> DOM senza innerHTML: prima i **grassetti**, poi i badge di citazione dentro ogni pezzo.
+    // Un [n] senza fonte corrispondente (anche uno solo in un [1, 9]) resta testo letterale.
+    function aeInline(parent, text, byRef, mkCite) {
+      String(text).split(/(\*\*[^*]+\*\*)/g).forEach(part => {
+        if (!part) return;
+        const bold = /^\*\*([^*]+)\*\*$/.exec(part);
+        const target = bold ? parent.appendChild(h("strong")) : parent;
+        const s = bold ? bold[1] : part;
+        let last = 0;
+        for (const m of s.matchAll(CITE)) {
+          const refs = m[1].split(",").map(n => Number(n.trim()));
+          if (!refs.every(n => byRef.has(n))) continue;
+          if (m.index > last) target.append(s.slice(last, m.index));
+          refs.forEach(n => target.append(mkCite(byRef.get(n))));
+          last = m.index + m[0].length;
+        }
+        if (last < s.length) target.append(s.slice(last));
+      });
+    }
+    // Formato: **grassetto**; righe "- " "* " "• " -> ul; "1. " "1) " -> ol; riga vuota = nuovo paragrafo;
+    // righe consecutive nello stesso paragrafo separate da <br>.
+    function formatAnswer(text, sources, mkCite) {
+      const byRef = new Map(sources.map(s => [s.ref, s])), root = h("div", { class: "ae-answer" });
+      let list = null, para = null;
+      for (const raw of String(text).split("\n")) {
+        const line = raw.trimEnd(), ul = /^\s*[-*•]\s+(.*)$/.exec(line), ol = /^\s*(\d{1,2})[.)]\s+(.*)$/.exec(line);
+        if (ul || ol) {
+          para = null;
+          const tag = ul ? "ul" : "ol";
+          if (!list || list.tagName.toLowerCase() !== tag) {
+            list = root.appendChild(h(tag));
+            if (ol && Number(ol[1]) > 1) list.setAttribute("start", ol[1]);   // elenco numerato interrotto: riparte dal suo numero
+          }
+          aeInline(list.appendChild(h("li")), ul ? ul[1] : ol[2], byRef, mkCite);
+        } else if (!line.trim()) { para = list = null; }
+        else {
+          list = null;
+          if (para) para.append(h("br")); else para = root.appendChild(h("p"));
+          aeInline(para, line.trim(), byRef, mkCite);
+        }
+      }
+      return root;
+    }
+    /* AESIR-PURE-END */
+
+    const ae = { state: "idle", q: "", res: null, err: null, ctrl: null, req: 0, retryAt: 0,
+                 retryTimer: null, slowTimer: null, act: null };
+    const AE_INERT = ".top, .top-actions, .week-wrap, #list, #fab";   // la home sotto l'overlay
+    const aeIsOpen = () => $("aesir").classList.contains("open");
+
+    const citeBtn = s => h("button", { class: "ae-cite", type: "button",
+      "aria-label": `Fonte ${s.ref}: ${s.title}, ${fmtSrcDate(s.date)}. Apri il dettaglio`, title: s.title,
+      onclick: e => openSource(s, e.currentTarget) }, String(s.ref));
+
+    function aeFit() {   // la casella cresce da sola fino a 132px
+      const q = $("aeQ"); q.style.height = "auto"; q.style.height = Math.min(q.scrollHeight, 132) + "px";
+    }
+
+    // Stato dei controlli: invio (disabled se vuota; aria-disabled mentre pensa o c'e' un'attesa 429, cosi' il focus non si perde),
+    // contatore (da 400 caratteri) e pulsante "Riprova" (bloccato fino alla scadenza del 429).
+    function aeSync() {
+      const v = $("aeQ").value, n = v.length, send = $("aeSend");
+      const busy = ae.state === "thinking" || Date.now() < ae.retryAt;
+      send.disabled = !v.trim() && !busy;
+      if (busy) send.setAttribute("aria-disabled", "true"); else send.removeAttribute("aria-disabled");
+      const c = $("aeCount");
+      c.hidden = n < 400; c.textContent = n >= 400 ? `${n}/${AE_MAX}` : ""; c.classList.toggle("max", n >= AE_MAX);
+      if (ae.act) ae.act.disabled = Date.now() < ae.retryAt;
+    }
+
+    function aeSources(list) {
+      const items = list.map(s => {
+        const when = fmtSrcDate(s.date), pin = h("span");
+        pin.innerHTML = PIN;
+        return h("li", {}, h("button", { class: "card ae-src-item", type: "button",
+            "aria-label": `Fonte ${s.ref}: ${[s.title, when, s.time, s.place].filter(Boolean).join(", ")}. Apri il dettaglio`,
+            onclick: e => openSource(s, e.currentTarget) },
+          h("span", { class: "ae-cite", "aria-hidden": "true" }, String(s.ref)),
+          h("span", { class: "ae-src-body" },
+            h("span", { class: "row" }, h("span", { class: "name" }, s.title), s.time ? h("span", { class: "time" }, s.time) : null),
+            h("span", { class: "ae-src-date" }, when),
+            s.place ? h("span", { class: "where" }, pin.firstChild, h("span", {}, s.place)) : null)));
+      });
+      return h("details", { class: "ae-src" }, h("summary", {}, `Fonti (${list.length})`), h("ol", {}, ...items));
+    }
+
+    // Disegna lo stato corrente (idle | thinking | done | error). Tutto via h()/textContent.
+    function aeRender() {
+      $("aeFace").dataset.mood = ae.state;
+      $("aeEmpty").hidden = !(ae.state === "idle" && !ae.res);
+      const echo = $("aeQEcho"), live = $("aeLive"), extra = $("aeExtra");
+      echo.hidden = ae.state === "idle"; echo.textContent = ae.state === "idle" ? "" : ae.q;
+      live.replaceChildren(); extra.replaceChildren(); ae.act = null;
+      if (ae.state === "thinking") {
+        live.append(h("div", { class: "ae-status" }, h("span", { class: "ae-status-text" }, "Sto consultando il calendario"),
+          h("span", { class: "ae-dots", "aria-hidden": "true" }, h("i"), h("i"), h("i"))));
+      } else if (ae.state === "done" && ae.res) {
+        const r = ae.res;
+        live.append(formatAnswer(r.answer, r.sources, citeBtn));
+        const info = [r.model, r.retrieved != null ? `${r.retrieved} attività consultate` : ""].filter(Boolean).join(" · ");
+        extra.append(h("div", { class: "ae-meta", title: info },
+          h("span", {}, "Æsir può sbagliare: verifica nel calendario."),
+          r.reducedModel ? h("span", { class: "ae-pill",
+            "aria-label": "Risposta generata con il modello di riserva, potrebbe essere meno precisa" }, "Modello di riserva") : null));
+        if (r.sources.length) extra.append(aeSources(r.sources));
+      } else if (ae.state === "error" && ae.err) {
+        const box = h("div", { class: "ae-err" }, h("span", {}, ae.err.text), ae.err.small ? h("small", {}, ae.err.small) : null);
+        if (ae.err.retry) {
+          ae.act = h("button", { class: "ae-act", type: "button", onclick: () => ask(ae.q) }, "Riprova");
+          box.append(ae.act);
+        }
+        live.append(box);
+      }
+      aeSync();
+    }
+
+    function aeFinish(my, o) {
+      if (my !== ae.req || o.kind === "aborted") return;   // risposta vecchia (chiusura o nuova domanda): scartata
+      clearTimeout(ae.slowTimer); ae.ctrl = null;
+      if (o.kind === "http" && o.status === 401) {
+        store(null, null);
+        showLogin();   // chiude Æsir e azzera la conversazione
+        $("lgErr").textContent = "Sessione scaduta: accedi di nuovo."; $("lgErr").hidden = false;
+        return;
+      }
+      let res = null;
+      if (o.kind === "ok") {
+        res = aeParseResult(o.res);
+        if (!res) o = { kind: "http", status: 502, message: "", retryAfter: null };   // 200 senza answer: errore generico
+      }
+      if (res) { ae.state = "done"; ae.res = res; ae.err = null; }
+      else {
+        ae.state = "error"; ae.res = null; ae.err = aeError(o);
+        if (ae.err.waitMs) {
+          ae.retryAt = Date.now() + ae.err.waitMs;
+          clearTimeout(ae.retryTimer); ae.retryTimer = setTimeout(aeSync, ae.err.waitMs + 30);
+        }
+        if (!$("aeQ").value.trim()) { $("aeQ").value = ae.q; aeFit(); }   // la domanda si puo' correggere
+      }
+      aeRender();
+      if (res) {   // si legge dall'inizio: scorre solo .ae-conv (il metodo di scorrimento del browser potrebbe muovere anche gli antenati)
+        const conv = $("aeConv");
+        conv.scrollTop = Math.max(0, $("aeQEcho").offsetTop - 8);
+      }
+    }
+
+    async function ask(question) {
+      const q = (question || "").trim().slice(0, AE_MAX);
+      if (!q || ae.state === "thinking" || Date.now() < ae.retryAt) return;
+      const box = $("aeQ");
+      if (box.value.trim().slice(0, AE_MAX) === q) { box.value = ""; aeFit(); }
+      const my = ++ae.req;
+      ae.q = q; ae.state = "thinking"; ae.res = ae.err = null;
+      clearTimeout(ae.slowTimer);
+      ae.slowTimer = setTimeout(() => {   // dopo 8 s: un solo cambio di testo (annunciato una volta)
+        const t = my === ae.req && ae.state === "thinking" && $("aeLive").querySelector(".ae-status-text");
+        if (t) t.textContent = "Ci sto mettendo un po', ancora un attimo";
+      }, 8000);
+      aeRender();
+      const coarse = matchMedia("(pointer:coarse)").matches;
+      if (coarse) box.blur();   // chiude la tastiera: la risposta ha tutto lo schermo
+      if (coarse || document.activeElement !== box) $("aeConv").focus({ preventScroll: true });
+      if (!navigator.onLine) return aeFinish(my, { kind: "offline" });
+      const ctrl = ae.ctrl = new AbortController();
+      let timedOut = false;
+      // Invariante: timeout del client (60 s) > attesa slot del server (5 s) + Deadline (50 s). Se il backend
+      // allunga uno dei due, alzare anche questo, altrimenti il client abbandona risposte che sarebbero arrivate.
+      const timer = setTimeout(() => { timedOut = true; ctrl.abort(); }, AE_TIMEOUT_MS);
+      try {
+        const r = await fetch(`${API}/api/assistant/ask`, { method: "POST", signal: ctrl.signal,
+          headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ question: q }) });
+        if (r.ok) {
+          let res = null;
+          try { res = await r.json(); } catch (e) { if (ctrl.signal.aborted) throw e; }
+          return aeFinish(my, { kind: "ok", res });
+        }
+        let message = "";
+        try { const j = await r.json(); if (typeof j?.message === "string") message = j.message; } catch (e) { if (ctrl.signal.aborted) throw e; }
+        aeFinish(my, { kind: "http", status: r.status, message, retryAfter: r.headers.get("Retry-After") });
+      } catch (_) {
+        aeFinish(my, { kind: timedOut ? "timeout" : ctrl.signal.aborted ? "aborted" : "offline" });
+      } finally { clearTimeout(timer); }
+    }
+
+    // Badge e fonti: l'attivita' si recupera dalla cache settimanale (come la home) e si apre lo sheet SOPRA Æsir.
+    async function openSource(s, btn) {
+      if (btn.getAttribute("aria-busy") === "true") return;
+      const mon = mondayOf(s.date);
+      btn.setAttribute("aria-busy", "true");
+      try { if (!cache.has(mon)) cache.set(mon, await api(`/api/tasks?from=${mon}&to=${addDays(mon, 6)}`)); }
+      catch (e) { if (e.message !== "401") toast("Impossibile aprire l'attività."); return; }
+      finally { btn.removeAttribute("aria-busy"); }
+      const t = cache.get(mon).find(x => x.id === s.id);
+      if (!t) { toast("Questa attività non esiste più."); return; }
+      // Lo sheet (fratello dell'overlay) sta SOPRA Æsir: l'overlay diventa inert, cosi' lettori di schermo e Tab
+      // restano nello sheet. closeSheet() lo ripristina.
+      $("aesir").inert = true;
+      sheetReturn = btn; openSheet(t);
+      $("closeSheet").focus({ preventScroll: true });
+    }
+
+    // Cintura e bretelle: .app non deve mai restare scorsa (overflow:clip lo impedisce, ma il costo del controllo e' nullo).
+    function aeUnscroll() {
+      const a = $("app");
+      if (a.scrollTop) a.scrollTop = 0;
+      if (a.scrollLeft) a.scrollLeft = 0;
+    }
+
+    function openAesir() {
+      if (aeIsOpen()) return;
+      $("aesir").classList.add("open");
+      aeUnscroll();
+      document.querySelectorAll(AE_INERT).forEach(el => { el.inert = true; });   // Tab e lettori di schermo restano nell'overlay
+      aeRender();
+      setTimeout(() => {   // dopo la transizione; sul telefono non si apre la tastiera da sola
+        if (!aeIsOpen()) return;
+        if (matchMedia("(hover:hover) and (pointer:fine)").matches) $("aeQ").focus({ preventScroll: true }); else $("aeTitle").focus({ preventScroll: true });
+        aeUnscroll();
+      }, 260);
+    }
+    function closeAesir() {
+      if (!aeIsOpen()) return;
+      if (ae.state === "thinking") {   // si smette di aspettare: la domanda resta nella casella
+        ae.req++; ae.ctrl?.abort(); ae.ctrl = null; clearTimeout(ae.slowTimer);
+        ae.state = "idle";
+        if (!$("aeQ").value.trim()) { $("aeQ").value = ae.q; aeFit(); }
+        aeRender();
+      }
+      const el = $("aesir");
+      el.classList.remove("open", "kb"); el.style.setProperty("--kb", "0px"); el.inert = false;
+      document.querySelectorAll(AE_INERT).forEach(e => { e.inert = false; });
+      sheetReturn = null;
+      if ($("login").hidden) $("aesirBtn").focus({ preventScroll: true });
+      aeUnscroll();
+    }
+    // Logout / sessione scaduta: chiude e dimentica tutto.
+    function aeReset() {
+      closeAesir();
+      ae.req++; ae.ctrl?.abort(); ae.ctrl = null;
+      clearTimeout(ae.slowTimer); clearTimeout(ae.retryTimer);
+      Object.assign(ae, { state: "idle", q: "", res: null, err: null, retryAt: 0 });
+      $("aeQ").value = ""; aeFit(); aeRender();
+    }
+
+    // Tastiera mobile: Chrome Android >=108 e iOS non ridimensionano il layout viewport, quindi si alza il fondo
+    // dell'overlay di quanto e' alta la tastiera (--kb). Se il browser ridimensiona davvero, kb vale 0.
+    function syncKb() {
+      const vv = window.visualViewport, el = $("aesir");
+      if (!vv || !aeIsOpen()) return;
+      aeUnscroll();
+      const kb = Math.max(0, innerHeight - vv.height - vv.offsetTop), on = kb > 80;
+      el.style.setProperty("--kb", on ? kb + "px" : "0px");
+      el.classList.toggle("kb", on);
+      if (vv.offsetTop > 0 || scrollY) scrollTo(0, 0);   // iOS sposta la pagina: la riportiamo in cima
+    }
+    window.visualViewport?.addEventListener("resize", syncKb);
+    window.visualViewport?.addEventListener("scroll", syncKb);
+    $("aeQ").addEventListener("focus", () => [0, 150, 350].forEach(ms => setTimeout(syncKb, ms)));
+
+    $("aesirBtn").onclick = openAesir;
+    $("aeClose").onclick = closeAesir;
+    $("aesir").addEventListener("keydown", e => { if (e.key === "Escape" && !$("sheet").classList.contains("open")) closeAesir(); });
+    $("aeForm").addEventListener("submit", e => { e.preventDefault(); ask($("aeQ").value); });
+    $("aeQ").addEventListener("input", () => { aeFit(); aeSync(); });
+    $("aeQ").addEventListener("keydown", e => {   // Invio invia, Maiusc+Invio va a capo
+      if (e.key === "Enter" && !e.shiftKey && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); ask($("aeQ").value); }
+    });
+    document.querySelectorAll(".chip.ask").forEach(b => b.addEventListener("click", () => ask(b.textContent)));
+    aeRender();
+
     // --- login ---------------------------------------------------------------
-    function showLogin() { $("login").hidden = false; $("bellBtn").hidden = $("logoutBtn").hidden = true; $("lgUser").focus(); }
-    function hideLogin() { $("login").hidden = true; $("bellBtn").hidden = $("logoutBtn").hidden = false; }
+    function showLogin() {
+      $("login").hidden = false; $("bellBtn").hidden = $("logoutBtn").hidden = $("aesirBtn").hidden = true;
+      aeReset();   // chiude Æsir e dimentica domanda/risposta: non devono restare visibili a un altro utente
+      $("lgUser").focus();
+    }
+    function hideLogin() { $("login").hidden = true; $("bellBtn").hidden = $("logoutBtn").hidden = $("aesirBtn").hidden = false; }
 
     $("logoutBtn").onclick = () => { store(null, null); cache.clear(); showLogin(); };
 
@@ -678,6 +1223,14 @@
       } finally { btn.disabled = false; refreshBell(); }
     };
 
+    function setPassVisible(show) {
+      $("lgPass").type = show ? "text" : "password";
+      const t = $("lgToggle");
+      t.setAttribute("aria-pressed", show);
+      t.setAttribute("aria-label", show ? "Nascondi password" : "Mostra password");
+    }
+    $("lgToggle").onclick = () => setPassVisible($("lgPass").type === "password");
+
     $("loginForm").onsubmit = async e => {
       e.preventDefault();
       const btn = $("lgBtn"), err = $("lgErr");
@@ -693,7 +1246,7 @@
         }
         const d = await r.json();
         store(d.token, { username: d.username, memberId: d.memberId, displayName: d.displayName, role: d.role });
-        $("lgPass").value = "";
+        $("lgPass").value = ""; setPassVisible(false);
         hideLogin(); start(); refreshBell();
       } catch (_) {
         err.textContent = "Server non raggiungibile."; err.hidden = false;
@@ -710,7 +1263,7 @@
       let enabled = true;
       try { const r = await fetch(`${API}/api/auth/status`); if (r.ok) enabled = (await r.json()).enabled; } catch (_) {}
       if (enabled && !token) showLogin();
-      else { if (enabled) hideLogin(); else $("bellBtn").hidden = false; start(); refreshBell(); }
+      else { if (enabled) hideLogin(); else $("bellBtn").hidden = $("aesirBtn").hidden = false; start(); refreshBell(); }
     })();
 
     // Riallinea "oggi" se l'app resta aperta a cavallo della mezzanotte / torna in primo piano.

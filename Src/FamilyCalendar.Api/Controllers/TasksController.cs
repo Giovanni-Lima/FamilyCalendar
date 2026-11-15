@@ -3,6 +3,7 @@ using FamilyCalendar.Data;
 using FamilyCalendar.Domain;
 using FamilyCalendar.Filters;
 using FamilyCalendar.Services;
+using FamilyCalendar.Services.Assistant;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,12 +18,14 @@ public sealed class TasksController : ControllerBase
 
     private readonly PushSender _push;
     private readonly Geocoder _geocoder;
+    private readonly ITaskIndexScheduler _indexer;
 
-    public TasksController(FamilyCalendarDbContext db, PushSender push, Geocoder geocoder)
+    public TasksController(FamilyCalendarDbContext db, PushSender push, Geocoder geocoder, ITaskIndexScheduler indexer)
     {
         _db = db;
         _push = push;
         _geocoder = geocoder;
+        _indexer = indexer;
     }
 
     /// <summary>Date in formato <c>yyyy-MM-dd</c>, Time in formato <c>HH:mm</c> (o vuoto).</summary>
@@ -95,6 +98,7 @@ public sealed class TasksController : ControllerBase
         task.CreatedByMemberId = (HttpContext.Items[TokenAuthAttribute.PrincipalKey] as AuthService.Principal)?.MemberId;
         _db.Tasks.Add(task);
         await _db.SaveChangesAsync(ct);
+        _indexer.Enqueue(task.Id); // indicizzazione per l'assistente, in background
 
         var dto = await Load(task.Id, ct);
         _ = _push.NotifyAllAsync("Nuova attività",
@@ -122,6 +126,7 @@ public sealed class TasksController : ControllerBase
 
         await GeocodeIfChangedAsync(task, req, previousAddress, ct);
         await _db.SaveChangesAsync(ct);
+        _indexer.Enqueue(task.Id);
 
         var dto = await Load(id, ct);
         var editor = HttpContext.Items[TokenAuthAttribute.PrincipalKey] as AuthService.Principal;
@@ -139,6 +144,7 @@ public sealed class TasksController : ControllerBase
             return NotFound();
         task.Done = !task.Done;
         await _db.SaveChangesAsync(ct);
+        _indexer.Enqueue(task.Id); // lo stato fatto/da fare fa parte del testo indicizzato
         return Ok(await Load(id, ct));
     }
 

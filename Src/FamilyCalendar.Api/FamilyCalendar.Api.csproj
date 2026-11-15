@@ -18,6 +18,10 @@
     <PackageReference Include="WebPush" Version="1.0.12" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="FamilyCalendar.Tests" />
+  </ItemGroup>
+
   <!-- Il frontend (wwwroot/) è servito come file statico dall'API: stessa origine, niente CORS. -->
 
 </Project>

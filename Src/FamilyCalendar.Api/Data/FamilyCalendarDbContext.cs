@@ -13,6 +13,7 @@ public class FamilyCalendarDbContext : DbContext
     public DbSet<Label> Labels => Set<Label>();
     public DbSet<TaskItem> Tasks => Set<TaskItem>();
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
+    public DbSet<TaskEmbedding> TaskEmbeddings => Set<TaskEmbedding>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -57,6 +58,15 @@ public class FamilyCalendarDbContext : DbContext
             e.HasIndex(t => t.Date);
             e.HasOne(t => t.Label).WithMany().HasForeignKey(t => t.LabelId).OnDelete(DeleteBehavior.SetNull);
             e.HasOne(t => t.CreatedBy).WithMany().HasForeignKey(t => t.CreatedByMemberId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        b.Entity<TaskEmbedding>(e =>
+        {
+            e.HasKey(x => x.TaskItemId);
+            e.Property(x => x.Embedding).IsRequired().HasColumnType("blob");
+            e.Property(x => x.Model).IsRequired().HasMaxLength(60);
+            e.Property(x => x.InputSha256).IsRequired().HasMaxLength(64).IsFixedLength();
+            e.HasOne(x => x.TaskItem).WithOne().HasForeignKey<TaskEmbedding>(x => x.TaskItemId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

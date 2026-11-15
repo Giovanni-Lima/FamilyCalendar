@@ -142,6 +142,34 @@ namespace FamilyCalendar.Api.Data.Migrations
                     b.ToTable("PushSubscriptions");
                 });
 
+            modelBuilder.Entity("FamilyCalendar.Domain.TaskEmbedding", b =>
+                {
+                    b.Property<int>("TaskItemId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("EmbeddedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<byte[]>("Embedding")
+                        .IsRequired()
+                        .HasColumnType("blob");
+
+                    b.Property<string>("InputSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("char(64)")
+                        .IsFixedLength();
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("varchar(60)");
+
+                    b.HasKey("TaskItemId");
+
+                    b.ToTable("TaskEmbeddings");
+                });
+
             modelBuilder.Entity("FamilyCalendar.Domain.TaskItem", b =>
                 {
                     b.Property<int>("Id")
@@ -206,6 +234,17 @@ namespace FamilyCalendar.Api.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Member");
+                });
+
+            modelBuilder.Entity("FamilyCalendar.Domain.TaskEmbedding", b =>
+                {
+                    b.HasOne("FamilyCalendar.Domain.TaskItem", "TaskItem")
+                        .WithOne()
+                        .HasForeignKey("FamilyCalendar.Domain.TaskEmbedding", "TaskItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TaskItem");
                 });
 
             modelBuilder.Entity("FamilyCalendar.Domain.TaskItem", b =>

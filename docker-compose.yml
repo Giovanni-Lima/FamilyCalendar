@@ -49,6 +49,14 @@ services:
       FAMILYCALENDAR_VAPID_SUBJECT: ${FAMILYCALENDAR_VAPID_SUBJECT:-mailto:giovannilima800@gmail.com}
       # Membri iniziali (creati solo se la tabella è vuota): "Nome Cognome[:admin];..."
       FAMILYCALENDAR_MEMBERS: ${FAMILYCALENDAR_MEMBERS:-Giovanni Lima:admin;Maria Rossi}
+      # Assistente Æsir (RAG). Le chiavi API vanno messe nel file .env (non committato), MAI qui nel compose.
+      # Senza GEMINI_API_KEY l'assistente risponde 503 "non configurato"; GROQ_API_KEY è il fallback (opzionale).
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      # Limiti di utilizzo (gli admin sono esenti)
+      Assistant__PerUserPerHour: ${ASSISTANT_PER_USER_PER_HOUR:-10}
+      Assistant__GlobalPerDay: ${ASSISTANT_GLOBAL_PER_DAY:-80}
+      Assistant__MaxConcurrent: ${ASSISTANT_MAX_CONCURRENT:-2}
 
 volumes:
   dbdata:
