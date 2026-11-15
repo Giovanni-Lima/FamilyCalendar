@@ -991,10 +991,9 @@
         const r = ae.res;
         live.append(formatAnswer(r.answer, r.sources, citeBtn));
         const info = [r.model, r.retrieved != null ? `${r.retrieved} attività consultate` : ""].filter(Boolean).join(" · ");
-        extra.append(h("div", { class: "ae-meta", title: info },
-          h("span", {}, "Æsir può sbagliare: verifica nel calendario."),
-          r.reducedModel ? h("span", { class: "ae-pill",
-            "aria-label": "Risposta generata con il modello di riserva, potrebbe essere meno precisa" }, "Modello di riserva") : null));
+        if (r.reducedModel) extra.append(h("div", { class: "ae-meta", title: info },
+          h("span", { class: "ae-pill",
+            "aria-label": "Risposta generata con il modello di riserva, potrebbe essere meno precisa" }, "Modello di riserva")));
         if (r.sources.length) extra.append(aeSources(r.sources));
       } else if (ae.state === "error" && ae.err) {
         const box = h("div", { class: "ae-err" }, h("span", {}, ae.err.text), ae.err.small ? h("small", {}, ae.err.small) : null);
