@@ -14,14 +14,69 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="FamilyCalendar">
   <meta name="mobile-web-app-capable" content="yes">
+  <meta name="color-scheme" content="light dark">
+  <script>
+    /* Tema deciso PRIMA del CSS: niente lampo del tema sbagliato. Stesse regole di resolveTheme() nello script principale.
+       ES5 di proposito: e' la prima cosa che gira e non deve poter fallire per sintassi. */
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem("fc_theme"); } catch (e) {}
+      if (t !== "light" && t !== "dark")
+        t = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", t);
+      var m = document.querySelector('meta[name="theme-color"]');
+      if (m) m.setAttribute("content", t === "dark" ? "#1c1916" : "#ffffff");
+    })();
+  </script>
 
   <style>
     :root{
-      --orange:#ff9a1f; --orange-dark:#f08400; --peach:#fde9cc; --page:#fdc98a;
-      --ink:#16181d; --muted:#8a8f98; --line:#e6e8ec; --surface:#fff; --yellow:#f2c500; --danger:#e5484d;
+      color-scheme:light;
+      /* accento */
+      --orange:#ff9a1f; --orange-dark:#f08400; --orange-ink:#b35c00;   /* orange-ink: testo/contorni su bianco 4,7:1 */
+      --on-accent:#fff; --on-accent-ink:#16181d; --accent-wash:#fff5e6;
+      --peach:#fde9cc; --yellow:#f2c500;
+      /* superfici */
+      --page:#fdc98a; --surface:#fff; --surface-2:#fff; --surface-3:#fff; --deco:#eef0f2; --scrim:rgba(22,24,29,.35);
+      /* testo */
+      --ink:#16181d; --ink-soft:#4b5058; --muted:#8a8f98;
+      /* linee e campi */
+      --line:#e6e8ec; --rule:#d7dae0; --field-line:#d7dae0; --field-border:#e6e8ec; --field-bg:#fff; --control-line:#c9ccd3;
+      --focus-ring:rgba(255,154,31,.25);
+      /* errore */
+      --danger:#e5484d; --danger-fill:#e5484d; --on-danger:#fff;
+      --danger-wash:rgba(229,72,77,.08); --danger-line:rgba(229,72,77,.4);
+      /* ombre */
       --shadow:0 8px 20px rgba(255,154,31,.38);
-      --ink-soft:#4b5058;    /* testo secondario su bianco/peach: 8,1:1 */
-      --orange-ink:#b35c00;  /* arancione per testo e contorni su bianco: 4,7:1 (--orange sul bianco e' 2,1:1) */
+      --shadow-app:0 20px 50px rgba(120,60,0,.25);
+      --shadow-btn:0 4px 14px rgba(0,0,0,.2);
+      --shadow-pop:0 6px 18px rgba(0,0,0,.08);
+      --shadow-pop-lg:0 14px 40px rgba(0,0,0,.25);
+      --shadow-bar:0 -6px 16px rgba(0,0,0,.07);
+      --shadow-danger:0 8px 20px rgba(229,72,77,.35);
+      --map-filter:none;
+    }
+    /* Tema scuro: data-theme e' sempre impostato dallo script in <head> (anche quando segue il sistema),
+       quindi non serve ripetere i valori in @media (prefers-color-scheme:dark). */
+    :root[data-theme="dark"]{
+      color-scheme:dark;
+      --orange:#ff9a1f; --orange-dark:#ffb057; --orange-ink:#ffb057;
+      --on-accent:#1f1305; --on-accent-ink:#1f1305; --accent-wash:#3b2915;
+      --peach:#3d2b18; --yellow:#f2c500;
+      --page:#2e1e0e; --surface:#1c1916; --surface-2:#26221e; --surface-3:#302b26; --deco:#25201b; --scrim:rgba(0,0,0,.6);
+      --ink:#f4efe9; --ink-soft:#cdc4ba; --muted:#b0a69b;
+      --line:#3a342e; --rule:#4a433c; --field-line:#7d736a; --field-border:#7d736a; --field-bg:#1c1916; --control-line:#857a70;
+      --focus-ring:rgba(255,176,87,.35);
+      --danger:#ff7b7f; --danger-fill:#d2373d; --on-danger:#fff;
+      --danger-wash:rgba(255,123,127,.12); --danger-line:rgba(255,123,127,.45);
+      --shadow:0 6px 16px rgba(0,0,0,.45);
+      --shadow-app:0 0 0 1px #3a2a1a,0 20px 50px rgba(0,0,0,.6);
+      --shadow-btn:0 0 0 1px #423b34,0 4px 14px rgba(0,0,0,.5);
+      --shadow-pop:0 8px 24px rgba(0,0,0,.5);
+      --shadow-pop-lg:0 0 0 1px #423b34,0 14px 40px rgba(0,0,0,.6);
+      --shadow-bar:0 -1px 0 #3a342e,0 -8px 20px rgba(0,0,0,.35);
+      --shadow-danger:0 6px 16px rgba(0,0,0,.45);
+      --map-filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.9) saturate(.8);
     }
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
     html,body{height:100%;margin:0}
@@ -37,11 +92,11 @@
       display:flex;flex-direction:column}
     @media (min-width:600px){
       body{padding:24px 0}
-      .app{border-radius:28px;box-shadow:0 20px 50px rgba(120,60,0,.25)}
+      .app{border-radius:28px;box-shadow:var(--shadow-app)}
     }
     /* Cerchio grigio decorativo in alto a destra, come nel mockup */
     .app::before{content:"";position:absolute;top:-170px;right:-140px;width:360px;height:360px;border-radius:50%;
-      background:#eef0f2;z-index:0;pointer-events:none}
+      background:var(--deco);z-index:0;pointer-events:none}
 
     /* --- intestazione ---------------------------------------------------- */
     .top{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-start;
@@ -63,44 +118,44 @@
     .day .dd{font-size:19px;font-weight:800;line-height:1}
     .day .dots{display:flex;gap:3px;height:6px;align-items:center}
     .day .dots i{width:5px;height:5px;border-radius:50%;display:block}
-    .day.sel{background:var(--orange);color:#fff;box-shadow:var(--shadow);transform:translateY(-2px)}
-    .day.sel .dn{color:#fff}
+    .day.sel{background:var(--orange);color:var(--on-accent);box-shadow:var(--shadow);transform:translateY(-2px)}
+    .day.sel .dn{color:var(--on-accent)}
     .day.is-today:not(.sel) .dd{color:var(--orange-dark)}
 
     /* --- elenco attività (timeline) ------------------------------------- */
     .list{position:relative;z-index:1;flex:1;overflow-y:auto;padding:26px 20px 130px;-webkit-overflow-scrolling:touch}
     .item{position:relative;display:flex;gap:14px;align-items:flex-start;padding-bottom:16px}
-    .item::before{content:"";position:absolute;left:10px;top:24px;bottom:-4px;width:1px;background:#d7dae0}
+    .item::before{content:"";position:absolute;left:10px;top:24px;bottom:-4px;width:1px;background:var(--rule)}
     .item:last-of-type::before{display:none}
-    .chk{flex:0 0 auto;width:21px;height:21px;border-radius:6px;border:1.5px solid #c9ccd3;background:#fff;padding:0;
+    .chk{flex:0 0 auto;width:21px;height:21px;border-radius:6px;border:1.5px solid var(--control-line);background:var(--surface-2);padding:0;
       display:grid;place-items:center;margin-top:9px;position:relative;z-index:1}
-    .chk svg{width:13px;height:13px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+    .chk svg{width:13px;height:13px;stroke:var(--on-accent);fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;opacity:0}
     .item.done .chk{background:var(--orange);border-color:var(--orange)}
     .item.done .chk svg{opacity:1}
     .card{flex:1;min-width:0;text-align:left;border:1px solid transparent;border-radius:8px;padding:9px 12px 8px;
-      background:#fff;border-color:var(--line);display:block;width:100%}
+      background:var(--surface-2);border-color:var(--line);display:block;width:100%}
     .card .row{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
     .card .name{font-weight:700;font-size:14.5px;overflow-wrap:anywhere}
     .card .time{font-size:13px;font-weight:500;white-space:nowrap}
-    .card .note{font-size:11.5px;color:#4b5058;margin-top:4px;white-space:pre-wrap;overflow-wrap:anywhere}
-    .card .meta{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:6px;font-size:10px;color:#4b5058}
+    .card .note{font-size:11.5px;color:var(--ink-soft);margin-top:4px;white-space:pre-wrap;overflow-wrap:anywhere}
+    .card .meta{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:6px;font-size:10px;color:var(--ink-soft)}
     .card .lbl{display:flex;align-items:center;gap:5px}
     .card .by{color:var(--muted);font-style:italic;white-space:nowrap}
-    .card .where{display:flex;align-items:flex-start;gap:4px;font-size:11px;color:#4b5058;margin-top:4px;overflow-wrap:anywhere}
+    .card .where{display:flex;align-items:flex-start;gap:4px;font-size:11px;color:var(--ink-soft);margin-top:4px;overflow-wrap:anywhere}
     .card .where svg{flex:0 0 auto;width:12px;height:12px;margin-top:1px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-    .sugg{margin-top:8px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 6px 18px rgba(0,0,0,.08)}
+    .sugg{margin-top:8px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface-3);box-shadow:var(--shadow-pop)}
     .sugg-item{display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);
-      background:#fff;padding:10px 14px}
+      background:var(--surface-3);padding:10px 14px}
     .sugg-item:last-child{border-bottom:0}
-    .sugg-item:active{background:#fff5e6}
+    .sugg-item:active{background:var(--accent-wash)}
     .sugg-main{font-size:14px;font-weight:700;overflow-wrap:anywhere}
     .sugg-detail{font-size:12px;color:var(--muted)}
     .sugg-none{padding:12px 14px;font-size:13px;color:var(--muted)}
     .map-hint{font-size:12px;color:var(--muted);margin-top:8px}
-    .map-box{margin-top:12px;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
-    .map-box iframe{display:block;width:100%;height:170px;border:0}
+    .map-box{margin-top:12px;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--surface-2)}
+    .map-box iframe{display:block;width:100%;height:170px;border:0;filter:var(--map-filter)}
     .dir-btn{display:block;text-align:center;text-decoration:none;color:var(--orange-dark);font-weight:800;font-size:13px;
-      letter-spacing:.03em;text-transform:uppercase;padding:11px;border-top:1px solid var(--line);background:#fff}
+      letter-spacing:.03em;text-transform:uppercase;padding:11px;border-top:1px solid var(--line);background:var(--surface-2)}
     .by-line{color:var(--muted);font-size:12px;text-align:center;margin-top:-10px}
     .card .lbl i{width:6px;height:6px;border-radius:50%;display:block}
     .item.done .name,.item.done .time{text-decoration:line-through}
@@ -109,17 +164,17 @@
 
     /* --- pulsante + ------------------------------------------------------ */
     .fab{position:absolute;z-index:5;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 26px);
-      width:62px;height:62px;border-radius:50%;border:0;background:var(--orange);color:#fff;display:grid;place-items:center;
+      width:62px;height:62px;border-radius:50%;border:0;background:var(--orange);color:var(--on-accent);display:grid;place-items:center;
       box-shadow:var(--shadow)}
-    .fab svg{width:28px;height:28px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round}
+    .fab svg{width:28px;height:28px;stroke:currentColor;fill:none;stroke-width:3;stroke-linecap:round}
     .fab:active{transform:translateX(-50%) scale(.95)}
 
     /* --- foglio "nuova attività" ---------------------------------------- */
-    .sheet{position:absolute;inset:0;z-index:20;background:#fff;display:flex;flex-direction:column;overflow-y:auto;
+    .sheet{position:absolute;inset:0;z-index:20;background:var(--surface);display:flex;flex-direction:column;overflow-y:auto;
       transform:translateY(100%);transition:transform .25s ease;visibility:hidden}
     .sheet.open{transform:none;visibility:visible}
     .sheet::before{content:"";position:absolute;top:-150px;left:50%;margin-left:-190px;width:380px;height:380px;border-radius:50%;
-      background:#eef0f2;pointer-events:none}
+      background:var(--deco);pointer-events:none}
     .sheet{scrollbar-width:none;-ms-overflow-style:none}   /* scorre comunque, ma senza barra visibile */
     .sheet::-webkit-scrollbar{display:none}
     .sheet > *{position:relative}
@@ -127,34 +182,34 @@
        ancora al pulsante. Non uso position:fixed perché su desktop l'app è una card centrata. */
     .sheet > .close-wrap{position:sticky;top:0;height:0;z-index:5}
     .sheet .close{position:absolute;top:calc(env(safe-area-inset-top) + 28px);left:14px;width:44px;height:44px;
-      background:#fff;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+      background:var(--surface-3);box-shadow:var(--shadow-btn)}
     .sheet h2{margin:0;text-align:center;font-size:16px;letter-spacing:.05em;font-weight:700;
       padding:calc(env(safe-area-inset-top) + 150px) 0 34px}
     /* Il pulsante di invio sta sempre dove sta il "+" della home (centrato, a 34px dal fondo:
        il suo centro coincide con quello del FAB da 62px a 26px), anche se il form scorre. */
     .form{flex:1 0 auto;padding:0 30px 0;display:flex;flex-direction:column;gap:22px}
     .field label{display:block;color:var(--orange);font-weight:700;font-size:12px;letter-spacing:.03em;text-transform:uppercase;margin-bottom:6px}
-    .field input,.field textarea{width:100%;border:0;border-bottom:1px solid #d7dae0;border-radius:0;background:transparent;
+    .field input,.field textarea{width:100%;border:0;border-bottom:1px solid var(--field-line);border-radius:0;background:transparent;
       padding:6px 0;font-size:15px;outline:none}
     .field input:focus,.field textarea:focus{border-bottom-color:var(--orange)}
     .field textarea{resize:none;min-height:80px;line-height:1.5}
     .two{display:grid;grid-template-columns:1.4fr 1fr;gap:22px}
     .chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
-    .chip{flex:0 0 calc((100% - 16px) / 3);justify-content:center;display:flex;align-items:center;gap:7px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px;font-size:13px}
+    .chip{flex:0 0 calc((100% - 16px) / 3);justify-content:center;display:flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:7px 13px;font-size:13px}
     .chip i{width:9px;height:9px;border-radius:50%;display:block}
-    .chip.on{border-color:var(--orange);background:#fff5e6;font-weight:700}
+    .chip.on{border-color:var(--orange);background:var(--accent-wash);font-weight:700}
     .form-err{color:var(--danger);font-size:13px;text-align:center}
-    .submit{align-self:center;border:0;border-radius:999px;background:var(--orange);color:#fff;font-weight:800;letter-spacing:.05em;
+    .submit{align-self:center;border:0;border-radius:999px;background:var(--orange);color:var(--on-accent);font-weight:800;letter-spacing:.05em;
       padding:14px 44px;box-shadow:var(--shadow);margin-top:6px;text-transform:uppercase}
     /* Barra azioni fissa in basso: in modifica "Salva" a sinistra, "Aggiungi a Google Calendar" (tondo) al centro e "Elimina" (danger) a destra. */
     /* Fascia bianca a tutta larghezza dietro i pulsanti: ciò che scorre (etichette, mappa...) le passa sotto senza confondersi. */
-    .actions{position:sticky;bottom:0;margin:auto -30px 0;padding:14px 30px calc(env(safe-area-inset-bottom) + 34px);background:#fff;
-      box-shadow:0 -6px 16px rgba(0,0,0,.07);z-index:2;display:flex;justify-content:center;gap:12px}
+    .actions{position:sticky;bottom:0;margin:auto -30px 0;padding:14px 30px calc(env(safe-area-inset-bottom) + 34px);background:var(--surface);
+      box-shadow:var(--shadow-bar);z-index:2;display:flex;justify-content:center;gap:12px}
     .actions .submit{margin-top:0}
     .actions.two .submit{flex:1;padding-left:0;padding-right:0}
-    .actions .del{background:var(--danger);box-shadow:0 8px 20px rgba(229,72,77,.35)}
+    .actions .del{background:var(--danger-fill);color:var(--on-danger);box-shadow:var(--shadow-danger)}
     .submit:disabled{opacity:.55}
-    .gcal-btn{flex:0 0 auto;align-self:center;width:50px;height:50px;border-radius:50%;border:2px solid var(--orange);background:#fff;
+    .gcal-btn{flex:0 0 auto;align-self:center;width:50px;height:50px;border-radius:50%;border:2px solid var(--orange);background:var(--surface-2);
       color:var(--orange-dark);display:grid;place-items:center;padding:0;box-shadow:var(--shadow)}
     .gcal-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
@@ -165,9 +220,9 @@
 
     /* --- calendario mensile (si apre dal click sulla data) ---------------------- */
     .date-line,.today{cursor:pointer}
-    .cal{position:absolute;z-index:30;inset:0;background:rgba(22,24,29,.35);display:flex;justify-content:center;align-items:flex-start;
+    .cal{position:absolute;z-index:30;inset:0;background:var(--scrim);display:flex;justify-content:center;align-items:flex-start;
       padding:calc(env(safe-area-inset-top) + 90px) 16px 16px}
-    .cal-box{width:100%;max-width:360px;background:#fff;border-radius:20px;box-shadow:0 14px 40px rgba(0,0,0,.25);padding:16px 14px 12px}
+    .cal-box{width:100%;max-width:360px;background:var(--surface-3);border-radius:20px;box-shadow:var(--shadow-pop-lg);padding:16px 14px 12px}
     .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
     .cal-title{font-weight:800;font-size:15px;text-transform:capitalize}
     .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);row-gap:4px;text-align:center}
@@ -175,14 +230,14 @@
     .cal-d{border:0;background:transparent;border-radius:10px;height:40px;font-size:14px;font-weight:600;display:flex;flex-direction:column;
       align-items:center;justify-content:center;gap:2px;padding:0}
     .cal-d.is-today{box-shadow:inset 0 0 0 1.5px var(--orange)}
-    .cal-d.sel{background:var(--orange);color:#fff;box-shadow:var(--shadow)}
+    .cal-d.sel{background:var(--orange);color:var(--on-accent);box-shadow:var(--shadow)}
     .cal-d .dots{display:flex;gap:2px;height:5px}
     .cal-d .dots i{width:4px;height:4px;border-radius:50%;display:block}
     .cal-foot{display:flex;justify-content:space-between;margin-top:8px}
     .cal-foot button{border:0;background:transparent;color:var(--orange-dark);font-weight:800;font-size:13px;padding:8px 10px;text-transform:uppercase;letter-spacing:.03em}
 
     /* --- login ----------------------------------------------------------- */
-    .login{position:absolute;inset:0;z-index:50;background:#fff;display:flex;align-items:center;justify-content:center;padding:24px}
+    .login{position:absolute;inset:0;z-index:50;background:var(--surface);display:flex;align-items:center;justify-content:center;padding:24px}
     .login-box{width:100%;max-width:340px;display:flex;flex-direction:column;gap:14px;position:relative}
     .login-box .logo{width:72px;height:72px;border-radius:20px;margin:0 auto 4px;display:block;box-shadow:var(--shadow)}
     .login-box h1{margin:0;text-align:center;font-size:26px;font-weight:800}
@@ -199,7 +254,7 @@
     .pw-toggle[aria-pressed="true"] .eye{display:none}
     .pw-toggle[aria-pressed="true"] .eye-off{display:block}
 
-    .toast{position:absolute;z-index:60;left:50%;bottom:110px;transform:translate(-50%,20px);background:var(--orange);color:#fff;font-weight:700;box-shadow:var(--shadow);
+    .toast{position:absolute;z-index:60;left:50%;bottom:110px;transform:translate(-50%,20px);background:var(--orange);color:var(--on-accent);font-weight:700;box-shadow:var(--shadow);
       font-size:13px;padding:9px 16px;border-radius:999px;opacity:0;pointer-events:none;transition:.25s;max-width:85%;text-align:center}
     .toast.show{opacity:1;transform:translate(-50%,0)}
 
@@ -210,11 +265,11 @@
       overflow:hidden;overflow:clip;transform:translateY(100%);visibility:hidden;transition:transform .25s ease,visibility 0s .25s}
     .aesir.open{transform:none;visibility:visible;transition:transform .25s ease}
     .aesir::before{content:"";position:absolute;top:-170px;right:-140px;width:360px;height:360px;border-radius:50%;
-      background:#eef0f2;pointer-events:none}
+      background:var(--deco);pointer-events:none}
     .aesir > *{position:relative}
 
     .ae-head{display:flex;align-items:center;gap:12px;padding:calc(env(safe-area-inset-top) + 14px) 16px 12px}
-    .ae-head .close{width:44px;height:44px;background:#fff;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+    .ae-head .close{width:44px;height:44px;background:var(--surface-3);box-shadow:var(--shadow-btn)}
     .ae-title{margin:0;font-size:16px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
     .ae-sub{margin:1px 0 0;font-size:12px;color:var(--ink-soft)}
 
@@ -223,18 +278,18 @@
     .ae-live:empty,#aeExtra:empty{display:none}
 
     /* Fascia bianca come .actions dello sheet */
-    .ae-compose{display:flex;align-items:flex-end;gap:10px;background:#fff;box-shadow:0 -6px 16px rgba(0,0,0,.07);
+    .ae-compose{display:flex;align-items:flex-end;gap:10px;background:var(--surface-2);box-shadow:var(--shadow-bar);
       padding:10px 16px calc(env(safe-area-inset-bottom) + 14px)}
     .aesir.kb .ae-compose{padding-bottom:10px}
     .ae-input{flex:1;min-width:0}
-    .ae-input textarea{display:block;width:100%;min-height:48px;max-height:132px;resize:none;border:1px solid var(--line);
-      border-radius:14px;background:#fff;padding:12px 14px;font-size:16px;line-height:1.4;outline:none}   /* 16px: niente zoom su iOS */
+    .ae-input textarea{display:block;width:100%;min-height:48px;max-height:132px;resize:none;border:1px solid var(--field-border);
+      border-radius:14px;background:var(--field-bg);padding:12px 14px;font-size:16px;line-height:1.4;outline:none}   /* 16px: niente zoom su iOS */
     .ae-input textarea::placeholder{color:var(--muted)}
-    .ae-input textarea:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,154,31,.25)}
+    .ae-input textarea:focus{border-color:var(--orange);box-shadow:0 0 0 3px var(--focus-ring)}
     .ae-count{display:block;text-align:right;font-size:11px;color:var(--ink-soft);margin-top:3px}
     .ae-count.max{color:var(--ink);font-weight:700}
 
-    .ae-send{flex:0 0 auto;width:48px;height:48px;border-radius:50%;border:0;background:var(--orange);color:var(--ink);
+    .ae-send{flex:0 0 auto;width:48px;height:48px;border-radius:50%;border:0;background:var(--orange);color:var(--on-accent-ink);
       display:grid;place-items:center;padding:0;box-shadow:var(--shadow)}
     .ae-send svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
     .ae-send:disabled,.ae-send[aria-disabled="true"]{opacity:.55;box-shadow:none}
@@ -249,7 +304,7 @@
     .ae-hello p{margin:6px auto 0;max-width:300px;color:var(--ink-soft);font-size:13.5px;line-height:1.5}
     .aesir.kb .ae-hello p{display:none}
     .chip.ask{flex:0 1 auto;min-height:44px;padding:10px 16px;font-size:14px;text-align:center;color:var(--ink)}
-    .chip.ask:active{background:#fff5e6;border-color:var(--orange)}
+    .chip.ask:active{background:var(--accent-wash);border-color:var(--orange)}
 
     /* volto: quadratino arancione con due occhi, decorativo (lo stato vero lo dice il testo) */
     .ae-face{flex:0 0 auto;width:44px;height:44px;border-radius:14px;background:var(--orange);box-shadow:var(--shadow);
@@ -274,22 +329,22 @@
     @keyframes ae-dot{0%,80%,100%{opacity:.25}40%{opacity:1}}
 
     /* errori */
-    .ae-err{background:rgba(229,72,77,.08);border:1px solid rgba(229,72,77,.4);border-radius:14px;padding:12px 14px;
+    .ae-err{background:var(--danger-wash);border:1px solid var(--danger-line);border-radius:14px;padding:12px 14px;
       font-size:14px;line-height:1.5}
     .ae-err small{display:block;margin-top:4px;font-size:11.5px;color:var(--ink-soft)}
-    .ae-act{margin-top:10px;min-height:44px;padding:0 22px;border:2px solid var(--orange);border-radius:999px;background:#fff;
+    .ae-act{margin-top:10px;min-height:44px;padding:0 22px;border:2px solid var(--orange);border-radius:999px;background:var(--surface-2);
       color:var(--orange-ink);font-weight:800;font-size:13px;letter-spacing:.05em;text-transform:uppercase}
     .ae-act:disabled{opacity:.55}
 
     /* risposta */
-    .ae-answer{border:1px solid var(--line);border-radius:14px;background:#fff;padding:14px 16px;font-size:15px;line-height:1.55;
+    .ae-answer{border:1px solid var(--line);border-radius:14px;background:var(--surface-2);padding:14px 16px;font-size:15px;line-height:1.55;
       overflow-wrap:anywhere}
     .ae-answer p{margin:0 0 10px}.ae-answer > :last-child{margin-bottom:0}
     .ae-answer ul,.ae-answer ol{margin:0 0 10px;padding-left:20px;display:flex;flex-direction:column;gap:6px}
     .ae-answer li::marker{color:var(--orange-ink);font-weight:700}
 
     .ae-cite{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;
-      padding:0 6px;margin:0 2px;border:1px solid var(--orange);border-radius:999px;background:#fff5e6;color:var(--ink);
+      padding:0 6px;margin:0 2px;border:1px solid var(--orange);border-radius:999px;background:var(--accent-wash);color:var(--ink);
       font-size:12px;font-weight:800;line-height:1;vertical-align:2px}
     .ae-cite::after{content:"";position:absolute;inset:-6px -3px}   /* area di tocco ~34px senza alterare la riga */
 
@@ -319,6 +374,32 @@
       .ae-dots i{opacity:.6}
       .ae-src summary::after{transition:none}
     }
+
+    /* --- tema chiaro / scuro ------------------------------------------------- */
+    /* Interruttore: l'icona mostra la destinazione (luna = vai al buio, sole = vai al chiaro) */
+    :root[data-theme="dark"] .th-moon,
+    :root:not([data-theme="dark"]) .th-sun{display:none}
+    /* Al login l'interruttore resta raggiungibile sopra la schermata (gli altri pulsanti sono hidden) */
+    .app.is-login .top-actions{z-index:51}
+
+    /* Solo dark: anello di focus da tastiera in tutta l'app (nel light resta quello del browser).
+       :where() tiene la specificita' bassa: i campi con outline:none e il loro indicatore proprio non cambiano. */
+    :where(:root[data-theme="dark"]) :focus-visible{outline:3px solid var(--orange-ink);outline-offset:2px}
+    :root[data-theme="dark"] ::selection{background:rgba(255,154,31,.35);color:var(--ink)}
+    :root[data-theme="dark"] ::placeholder{color:var(--muted);opacity:1}
+    :root[data-theme="dark"] input:-webkit-autofill{-webkit-text-fill-color:var(--ink);caret-color:var(--ink);
+      box-shadow:0 0 0 1000px var(--surface) inset}
+
+    /* Cross-fade breve solo al tocco dell'interruttore (classe messa e tolta da toggleTheme) */
+    @media (prefers-reduced-motion:no-preference){
+      :root.theme-anim, :root.theme-anim *, :root.theme-anim *::before, :root.theme-anim *::after{
+        transition:background-color .2s ease,border-color .2s ease,color .2s ease !important}
+    }
+
+    /* Contrasto elevato richiesto dal sistema (solo dark: il light resta com'e') */
+    @media (prefers-contrast:more){
+      :root[data-theme="dark"]{--muted:#cdc4ba; --line:#6b625a; --field-line:#a39a90; --control-line:#a39a90}
+    }
   </style>
 </head>
 <body>
@@ -337,6 +418,10 @@
       <button class="icon-btn" id="bellBtn" aria-label="Attiva le notifiche" title="Notifiche" hidden>
         <svg id="bellOn" viewBox="0 0 24 24" hidden><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
         <svg id="bellOff" viewBox="0 0 24 24"><path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="m2 2 20 20"/></svg>
+      </button>
+      <button class="icon-btn" id="themeBtn" type="button" aria-label="Passa al tema scuro" title="Passa al tema scuro">
+        <svg class="th-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        <svg class="th-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
       </button>
       <button class="icon-btn" id="logoutBtn" aria-label="Esci" title="Esci" hidden>
         <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
@@ -467,6 +552,7 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="sr-only" id="themeLive" role="status" aria-live="polite"></div>
   </div>
 
   <script>
@@ -530,10 +616,74 @@
       for (const kid of kids) if (kid != null) e.append(kid);
       return e;
     }
-    const tint = (hex, a) => {
-      const n = parseInt(hex.slice(1), 16);
-      return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`;
-    };
+    // --- tema chiaro / scuro: funzioni pure (testabili con Node, vedi i marker) ------------
+    /* THEME-PURE-START */
+    const THEMES = ["light", "dark"];
+    const THEME_KEY = "fc_theme";
+    const THEME_COLOR = { light: "#ffffff", dark: "#1c1916" };   // = --surface di ciascun tema
+    const LABEL_SURFACE = { light: "#ffffff", dark: "#26221e" }; // = --surface-2 (fondo delle card)
+
+    // stored: "light" | "dark" | null (nessuna scelta); systemDark: boolean
+    function resolveTheme(stored, systemDark) {
+      return THEMES.includes(stored) ? stored : (systemDark ? "dark" : "light");
+    }
+    function nextTheme(current) { return current === "dark" ? "light" : "dark"; }
+
+    function readStored(storage) {
+      try { const v = storage && storage.getItem(THEME_KEY); return THEMES.includes(v) ? v : null; }
+      catch (_) { return null; }
+    }
+    function writeStored(storage, value) {
+      try {
+        if (THEMES.includes(value)) storage.setItem(THEME_KEY, value); else storage.removeItem(THEME_KEY);
+        return true;
+      } catch (_) { return false; }
+    }
+
+    // "#rgb" | "#rrggbb" -> [r,g,b] oppure null se non valido
+    function parseHex(hex) {
+      const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(hex || "").trim());
+      if (!m) return null;
+      let s = m[1]; if (s.length === 3) s = [...s].map(c => c + c).join("");
+      const n = parseInt(s, 16); return [n >> 16, (n >> 8) & 255, n & 255];
+    }
+    const toHex = rgb => "#" + rgb.map(c => Math.round(c).toString(16).padStart(2, "0")).join("");
+    function luminance(rgb) {
+      const f = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+      return 0.2126 * f(rgb[0]) + 0.7152 * f(rgb[1]) + 0.0722 * f(rgb[2]);
+    }
+    function contrast(a, b) {
+      const la = luminance(a), lb = luminance(b);
+      return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+    }
+    // Testo leggibile su un fondo pieno del colore dato: inchiostro scuro o bianco, quello col contrasto maggiore.
+    function contrastText(hex, dark = "#16181d", light = "#ffffff") {
+      const rgb = parseHex(hex); if (!rgb) return dark;
+      return contrast(parseHex(dark), rgb) >= contrast(parseHex(light), rgb) ? dark : light;
+    }
+    // Schiarisce (mescolando col bianco) finche' il colore ha almeno `min`:1 sul fondo `bg`.
+    function ensureContrast(rgb, bg, min) {
+      for (let i = 0; i <= 20; i++) {   // passi del 5%, interi: niente errori di arrotondamento
+        const out = rgb.map(c => Math.round(c + (255 - c) * i / 20));
+        if (contrast(out, bg) >= min) return out;
+      }
+      return [255, 255, 255];
+    }
+    // Stile di un'etichetta (card, puntini, chip) per il tema dato; valori pronti per style inline.
+    // bg e' OPACO (gia' mescolato col fondo della card), cosi' non dipende da cio' che sta dietro.
+    // light: identico a oggi (fondo = 16% del colore su bianco, bordo rgba .35, puntino = colore originale).
+    // dark: colore base schiarito finche' fa 3:1 sul fondo card (#000 -> #737373), fondo 16% (10% se molto chiaro), bordo .45.
+    function labelStyle(hex, theme) {
+      const dark = theme === "dark", rgb = parseHex(hex);
+      if (!rgb) return { dot: "var(--control-line)", bg: "", border: "" };   // senza etichetta: segue il tema da solo
+      const card = parseHex(LABEL_SURFACE[dark ? "dark" : "light"]);
+      const base = dark ? ensureContrast(rgb, card, 3) : rgb;
+      const a = dark && luminance(base) > 0.5 ? .10 : .16;
+      return { dot: toHex(base), bg: toHex(base.map((v, i) => v * a + card[i] * (1 - a))),
+               border: `rgba(${base.join(",")},${dark ? .45 : .35})` };
+    }
+    /* THEME-PURE-END */
+    const curTheme = () => document.documentElement.dataset.theme === "dark" ? "dark" : "light";
     const PIN = '<svg viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
     const CHECK ='<svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg>';
 
@@ -550,27 +700,27 @@
     function weekTasks() { return cache.get(mondayOf(selected)) || []; }
 
     function renderWeek() {
-      const mon = mondayOf(selected), tasks = weekTasks(), today = todayStr();
+      const mon = mondayOf(selected), tasks = weekTasks(), today = todayStr(), theme = curTheme();
       const wrap = $("week"); wrap.replaceChildren();
       for (let i = 0; i < 7; i++) {
         const ds = addDays(mon, i);
-        const colors = [...new Set(tasks.filter(t => t.date === ds).map(t => t.labelColor || "#c9ccd3"))].slice(0, 3);
+        const colors = [...new Set(tasks.filter(t => t.date === ds).map(t => t.labelColor || ""))].slice(0, 3);
         const btn = h("button", { class: "day" + (ds === selected ? " sel" : "") + (ds === today ? " is-today" : ""), type: "button",
             "aria-label": `${WD_LONG[parse(ds).getDay()]} ${parse(ds).getDate()}`, onclick: () => select(ds) },
           h("span", { class: "dn" }, WD_SHORT[i]),
           h("span", { class: "dd" }, String(parse(ds).getDate())),
-          h("span", { class: "dots" }, ...colors.map(c => h("i", { style: `background:${c}` }))));
+          h("span", { class: "dots" }, ...colors.map(c => h("i", { style: `background:${labelStyle(c, theme).dot}` }))));
         wrap.append(btn);
       }
     }
 
     function renderList() {
       const list = $("list"); list.replaceChildren();
-      const items = weekTasks().filter(t => t.date === selected);
+      const items = weekTasks().filter(t => t.date === selected), theme = curTheme();
       for (const t of items) {
-        const col = t.labelColor;
+        const st = t.labelColor ? labelStyle(t.labelColor, theme) : null;   // colori dell'etichetta: dipendono dal tema
         const card = h("button", { class: "card", type: "button", onclick: () => openSheet(t),
-          style: col ? `background:${tint(col, .16)};border-color:${tint(col, .35)}` : "" },
+          style: st ? `background:${st.bg};border-color:${st.border}` : "" },
           h("div", { class: "row" }, h("span", { class: "name" }, t.title), h("span", { class: "time" }, t.time || "")));
         if (t.note) card.append(h("div", { class: "note" }, t.note));
         if (t.address) {
@@ -578,7 +728,7 @@
           card.append(h("div", { class: "where" }, pin.firstChild, h("span", {}, t.address)));
         }
         if (t.labelName || t.createdBy) card.append(h("div", { class: "meta" },
-          h("span", { class: "lbl" }, t.labelName ? h("i", { style: `background:${col}` }) : null, t.labelName || ""),
+          h("span", { class: "lbl" }, t.labelName ? h("i", { style: `background:${st ? st.dot : "var(--control-line)"}` }) : null, t.labelName || ""),
           t.createdBy ? h("span", { class: "by" }, t.createdBy) : null));
         const chk = h("button", { class: "chk", type: "button", "aria-label": "Completata", onclick: () => toggle(t) });
         chk.innerHTML = CHECK;
@@ -615,7 +765,7 @@
       for (const l of labels) {
         box.append(h("button", { class: "chip" + (formLabel === l.id ? " on" : ""), type: "button",
           onclick: () => { formLabel = formLabel === l.id ? null : l.id; renderChips(); } },
-          h("i", { style: `background:${l.color}` }), l.name));
+          h("i", { style: `background:${labelStyle(l.color, curTheme()).dot}` }), l.name));
       }
     }
 
@@ -784,13 +934,13 @@
       for (const w of ["L", "M", "M", "G", "V", "S", "D"]) grid.append(h("div", { class: "cal-wd" }, w));
       for (let i = (calMonth.getDay() + 6) % 7; i > 0; i--) grid.append(h("div"));
 
-      const today = todayStr(), tasks = calCache.get(key) || [];
+      const today = todayStr(), tasks = calCache.get(key) || [], theme = curTheme();
       for (let d = 1, n = new Date(y, m + 1, 0).getDate(); d <= n; d++) {
         const ds = `${key}-${pad(d)}`;
-        const colors = [...new Set(tasks.filter(t => t.date === ds).map(t => t.labelColor || "#c9ccd3"))].slice(0, 3);
+        const colors = [...new Set(tasks.filter(t => t.date === ds).map(t => t.labelColor || ""))].slice(0, 3);
         grid.append(h("button", { class: "cal-d" + (ds === selected ? " sel" : "") + (ds === today ? " is-today" : ""), type: "button",
             onclick: () => { closeCal(); select(ds); } },
-          String(d), h("span", { class: "dots" }, ...colors.map(c => h("i", { style: `background:${ds === selected ? "#fff" : c}` })))));
+          String(d), h("span", { class: "dots" }, ...colors.map(c => h("i", { style: `background:${ds === selected ? "var(--on-accent)" : labelStyle(c, theme).dot}` })))));
       }
 
       if (!calCache.has(key)) {   // puntini: carica il mese e ridisegna se è ancora quello visibile
@@ -1161,13 +1311,51 @@
     document.querySelectorAll(".chip.ask").forEach(b => b.addEventListener("click", () => ask(b.textContent)));
     aeRender();
 
+    // --- tema chiaro / scuro: controller --------------------------------------------
+    // La scelta salvata vince; senza scelta si segue il sistema (anche quando cambia mentre l'app e' aperta).
+    const themeStore = (() => { try { return window.localStorage; } catch (_) { return null; } })();
+    const mqDark = matchMedia("(prefers-color-scheme: dark)");
+    let themeChoice = readStored(themeStore);   // in memoria: vale anche se lo storage non salva
+
+    function applyTheme(theme, announce = false) {
+      const changed = curTheme() !== theme;
+      document.documentElement.dataset.theme = theme;
+      document.querySelector('meta[name="theme-color"]')?.setAttribute("content", THEME_COLOR[theme]);
+      const label = theme === "dark" ? "Passa al tema chiaro" : "Passa al tema scuro";
+      $("themeBtn").setAttribute("aria-label", label); $("themeBtn").title = label;
+      if (announce) $("themeLive").textContent = theme === "dark" ? "Tema scuro attivo" : "Tema chiaro attivo";
+      if (!changed) return;
+      renderWeek(); renderList();                               // i colori delle etichette dipendono dal tema
+      if ($("sheet").classList.contains("open")) renderChips();
+      if (!$("cal").hidden) renderCal();
+    }
+
+    function toggleTheme() {
+      const next = nextTheme(curTheme());
+      themeChoice = next; writeStored(themeStore, next);
+      const root = document.documentElement;
+      root.classList.add("theme-anim");                         // il CSS la usa solo senza reduced-motion
+      clearTimeout(toggleTheme.t); toggleTheme.t = setTimeout(() => root.classList.remove("theme-anim"), 300);
+      applyTheme(next, true);
+    }
+
+    const onSystemTheme = () => { if (themeChoice === null) applyTheme(mqDark.matches ? "dark" : "light"); };
+    if (mqDark.addEventListener) mqDark.addEventListener("change", onSystemTheme); else mqDark.addListener(onSystemTheme);
+    addEventListener("storage", e => {                          // scelta fatta in un'altra scheda
+      if (e.key !== THEME_KEY && e.key !== null) return;
+      themeChoice = readStored(themeStore); applyTheme(resolveTheme(themeChoice, mqDark.matches));
+    });
+    $("themeBtn").onclick = toggleTheme;
+    applyTheme(resolveTheme(themeChoice, mqDark.matches));      // allinea etichetta e meta allo script in <head>
+
     // --- login ---------------------------------------------------------------
     function showLogin() {
+      $("app").classList.add("is-login");   // l'interruttore tema resta sopra la schermata di accesso
       $("login").hidden = false; $("bellBtn").hidden = $("logoutBtn").hidden = $("aesirBtn").hidden = true;
       aeReset();   // chiude Æsir e dimentica domanda/risposta: non devono restare visibili a un altro utente
       $("lgUser").focus();
     }
-    function hideLogin() { $("login").hidden = true; $("bellBtn").hidden = $("logoutBtn").hidden = $("aesirBtn").hidden = false; }
+    function hideLogin() { $("app").classList.remove("is-login"); $("login").hidden = true; $("bellBtn").hidden = $("logoutBtn").hidden = $("aesirBtn").hidden = false; }
 
     $("logoutBtn").onclick = () => { store(null, null); cache.clear(); showLogin(); };
 
