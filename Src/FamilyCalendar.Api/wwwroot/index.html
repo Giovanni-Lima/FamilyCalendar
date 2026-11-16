@@ -173,7 +173,7 @@
     .sheet{position:absolute;inset:0;z-index:20;background:var(--surface);display:flex;flex-direction:column;overflow-y:auto;
       transform:translateY(100%);transition:transform .25s ease;visibility:hidden}
     .sheet.open{transform:none;visibility:visible}
-    .sheet::before{content:"";position:absolute;top:-150px;left:50%;margin-left:-190px;width:380px;height:380px;border-radius:50%;
+    .sheet::before{content:"";position:absolute;top:-220px;left:50%;margin-left:-190px;width:380px;height:380px;border-radius:50%;
       background:var(--deco);pointer-events:none}
     .sheet{scrollbar-width:none;-ms-overflow-style:none}   /* scorre comunque, ma senza barra visibile */
     .sheet::-webkit-scrollbar{display:none}
@@ -184,7 +184,7 @@
     .sheet .close{position:absolute;top:calc(env(safe-area-inset-top) + 28px);left:14px;width:44px;height:44px;
       background:var(--surface-3);box-shadow:var(--shadow-btn)}
     .sheet h2{margin:0;text-align:center;font-size:16px;letter-spacing:.05em;font-weight:700;
-      padding:calc(env(safe-area-inset-top) + 150px) 0 34px}
+      padding:calc(env(safe-area-inset-top) + 80px) 0 28px}
     /* Il pulsante di invio sta sempre dove sta il "+" della home (centrato, a 34px dal fondo:
        il suo centro coincide con quello del FAB da 62px a 26px), anche se il form scorre. */
     .form{flex:1 0 auto;padding:0 30px 0;display:flex;flex-direction:column;gap:22px}
